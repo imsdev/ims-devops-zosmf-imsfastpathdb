@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Use encoding IBM-1047 if this workflow definition file is to be held in a z/OS dataset and
+     encoding utf-8 if it is to be held in a UNIX file system     --> 
+
+<!-- Declare external file containing IMS variables referenced in the following steps  -->
+<!DOCTYPE workflow [<!ENTITY copyright "Copyright IBM Corp., 2015"><!ENTITY variables SYSTEM "IMS_DEDB_Variables.xml">]>
+<!-- <!DOCTYPE workflow [<!ENTITY copyright "Copyright IBM Corp., 2015"><!ENTITY variables SYSTEM "IMS_DEDB_Variables_OLD.xml">]> -->
+
+
+<workflow xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                          xsi:noNamespaceSchemaLocation="../workflow/schemas/workflow_v1.xsd">
+
+	<!-- ********************************************************** -->
+	<!-- Workflow process information section                        -->
+	<!-- ********************************************************** -->
+	<workflowInfo>
+		<workflowID>Fast Path DEDB Deprovisioning - PoC</workflowID>
+		<workflowDescription>Fast Path DEDB Deprovisioning</workflowDescription>
+		<workflowVersion>1.0</workflowVersion>
+		<vendor>IBM</vendor>
+		
+		<!--
+		<Configuration>
+			<productID>5635A0-500</productID>
+			<productName>IMS</productName>
+			<productVersion>Version 14</productVersion>
+		</Configuration>
+		-->
+		<!-- -->
+		<Provisioning>
+			<productID>5635A0-500</productID>
+			<productName>IMS DEDB</productName>
+			<productVersion>Version 14</productVersion>
+			<softwareType>IMSdedb</softwareType>
+		</Provisioning>
+		<!-- -->
+		
+	</workflowInfo>
+
+
+	<!-- ***************************************************** -->
+	<!--     Include IMS variables used by the following steps -->
+	<!-- ***************************************************** -->
+	&variables;
+
+	
+	<!-- ***************************************************** -->
+	<!--     The  following variable values are picked up      -->
+	<!--     from the registry:                                -->
+	<!--  DBname - AREAname - DFS_PSBNAME - DFS_AUTH_USER_HLQ3 -->
+	<!-- ***************************************************** -->
+
+
+
+	<!-- ********************************************************** -->
+	<!-- ********************************************************** -->
+	<!-- Define the steps of the workflow process                   -->
+	<!-- ********************************************************** -->
+	<!-- ********************************************************** -->
+	
+	<!-- Environment Information Verification -->
+	<step name="Env_var_gathering" >
+		<title>Environment variable information gathering</title>
+        <description>
+			This step will allow you to enter the information needed for the IMS Database (DEDB) package process to be executed
+        </description>
+		<variableValue name="DFS_AUTH_LIB_HLQ" scope="instance" required="true" noPromptIfSet="false"/>
+		<variableValue name="DFS_AUTH_LIB_HLQ2" required="true" scope="instance" noPromptIfSet="false"/>			<!-- High level DSNAME qualifier for IMS data sets -->
+		<variableValue name="DFS_AUTH_USER_HLQ3" scope="instance" required="true" noPromptIfSet="false"/>
+		<variableValue name="DFS_IMSPlex" required="true" scope="instance" noPromptIfSet="false"/>		<!-- The IMS PLEX name  -->
+		<variableValue name="DFS_IMS_SSID" required="true" scope="instance" noPromptIfSet="false"/>
+		<variableValue name="DBname" required="true"/>
+		<variableValue name="AREAname" required="true"/>
+		<variableValue name="DFS_PSBNAME" required="true"/>
+		<instructions substitution="true">The following information will be used by this workflow and all its substeps:
+		</instructions>
+		<weight>10</weight>
+		<skills>System Programmer</skills>
+		<autoEnable>true</autoEnable>
+	</step>
+	
+	
+	<step name="Stop_DB">
+		<title>Stop the DB </title>
+		<description>Stop access to the database and take it offline</description>
+		<prereqStep name="Env_var_gathering"/>
+		<instructions>Stop access to the database and take it offline (TSOSPOC UPDATE DB)</instructions>
+		<weight>10</weight>
+		<skills>DB Admin</skills>
+		<autoEnable>true</autoEnable>
+		<template>
+			<inlineTemplate substitution="true">//*
+//SPOC      EXEC PGM=CSLUSPOC,
+//  PARM=('IMSPLEX=${instance-DFS_IMSPlex},ROUTE=${instance-DFS_IMS_SSID},WAIT=30,F=WRAP')
+//STEPLIB   DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL,
+//          DISP=SHR
+//SYSPRINT  DD SYSOUT=*
+//SYSIN     DD *
+     UPDATE DB NAME(${instance-DBname}) STOP(ACCESS) OPTION(FEOV)
+/*</inlineTemplate>
+			<submitAs>JCL</submitAs>
+			<maxLrecl>80</maxLrecl>
+			<saveAsDataset substitution="true">${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.JOBS(DBRDB)</saveAsDataset>
+		</template>
+	</step>
+
+
+
+	<step name="Delete_pgm">
+		<title>Delete program resources </title>
+		<description>Delete the program resources</description>
+		<prereqStep name="Stop_DB"/>
+		<instructions>Delete program resources (DELETE PGM)</instructions>
+		<weight>10</weight>
+		<skills>DB Admin</skills>
+		<autoEnable>true</autoEnable>
+		<template>
+			<inlineTemplate substitution="true">//*
+//SPOC      EXEC PGM=CSLUSPOC,
+//  PARM=('IMSPLEX=${instance-DFS_IMSPlex},ROUTE=${instance-DFS_IMS_SSID},WAIT=30,F=WRAP')
+//STEPLIB   DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL,
+//          DISP=SHR
+//SYSPRINT  DD SYSOUT=*
+//SYSIN     DD *
+     DEL PGM NAME(${instance-DFS_PSBNAME})
+/*</inlineTemplate>
+			<submitAs>JCL</submitAs>
+			<maxLrecl>80</maxLrecl>
+			<saveAsDataset substitution="true">${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.JOBS(DELPGM)</saveAsDataset>
+		</template>
+	</step>
+
+
+
+	<step name="Delete_DB">
+		<title>Delete database resources </title>
+		<description>Delete the database resources</description>
+		<prereqStep name="Delete_pgm"/>
+		<instructions>Delete database resources (DELETE DB)</instructions>
+		<weight>10</weight>
+		<skills>DB Admin</skills>
+		<autoEnable>true</autoEnable>
+		<template>
+			<inlineTemplate substitution="true">//*
+//SPOC      EXEC PGM=CSLUSPOC,
+//  PARM=('IMSPLEX=${instance-DFS_IMSPlex},ROUTE=${instance-DFS_IMS_SSID},WAIT=30,F=WRAP')
+//STEPLIB   DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL,
+//          DISP=SHR
+//SYSPRINT  DD SYSOUT=*
+//SYSIN     DD *
+     DEL DB NAME(${instance-DBname})
+/*</inlineTemplate>
+			<submitAs>JCL</submitAs>
+			<maxLrecl>80</maxLrecl>
+			<saveAsDataset substitution="true">${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.JOBS(DELPGM)</saveAsDataset>
+		</template>
+	</step>
+
+	
+	
+	<step name="Prep_ACB">
+		<title>Prep ACBLIB for OLC</title>
+		<description>Prepare the staging ACBLIB and copy to the inactive ACBLIB</description>
+		<prereqStep name="Delete_DB"/>
+		<instructions>Delete members from the staging ACBLIB and copy it to the inactive ACBLIB</instructions>
+		<weight>10</weight>
+		<skills>DB Admin</skills>
+		<autoEnable>true</autoEnable>
+		<template>
+			<inlineTemplate substitution="true">//*
+//PROCLIB  JCLLIB ORDER=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.PROCLIB
+//PREPACB   EXEC PGM=IDCAMS
+//STEPLIB   DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL,
+//          DISP=SHR
+//SYSPRINT  DD SYSOUT=*
+//STGACB    DD DISP=SHR,DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.ACBLIB
+ DELETE '${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.ACBLIB(${instance-DFS_PSBNAME})' FILE(STGACB)
+ DELETE '${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.ACBLIB(${instance-DBname})' FILE(STGACB)
+/*
+//*
+//*  COPY STAGING ACBLIB TO INACTIVE ACB LIBRARY
+//*
+//COPYACB   EXEC PROC=OLCUTL,SOUT='*',TYPE=ACB,IN=S,OUT=U
+/*</inlineTemplate>
+			<submitAs>JCL</submitAs>
+			<maxLrecl>80</maxLrecl>
+			<saveAsDataset substitution="true">${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.JOBS(PREPACB)</saveAsDataset>
+		</template>
+	</step>
+
+	
+	<step name="MOLC_Prepare">
+		<title>INITIATE OLC PHASE(PREPARE)</title>
+		<description>This step issues the OLC Command: INITIATE OLC PHASE(PREPARE)</description>
+		<prereqStep name="Prep_ACB"/>
+		<instructions>Study this sample</instructions>
+		<weight>10</weight>
+		<skills>System Programmer</skills>
+		<autoEnable>true</autoEnable>
+		<template>
+			<inlineTemplate substitution="true">//*
+//SPOC      EXEC PGM=CSLUSPOC,
+//  PARM=('IMSPLEX=${instance-DFS_IMSPlex},ROUTE=${instance-DFS_IMS_SSID},WAIT=30,F=WRAP')
+//STEPLIB   DD DISP=SHR,DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL
+//SYSPRINT  DD SYSOUT=*
+//*
+//*  OLC Prepare
+//*  For local OLC: /MODIFY PREPARE ACBLIB LTERM WTOR
+//*  For global OLC: INIT OLC PHASE(PREPARE) TYPE(ACBLIB) OPTION(FRCABND)
+//*
+//SYSIN     DD *
+   /MODIFY PREPARE ACBLIB LTERM WTOR
+/*</inlineTemplate>
+			<submitAs>JCL</submitAs>
+			<maxLrecl>80</maxLrecl>
+		</template>
+	</step>
+
+
+	<step name="MOLC_Commit">
+		<title>INITIATE OLC PHASE(COMMIT)</title>
+		<description>This step issues the OLC Command: INITIATE OLC PHASE(COMMIT)</description>
+		<prereqStep name="MOLC_Prepare"/>
+		<instructions>Study this sample</instructions>
+		<weight>10</weight>
+		<skills>System Programmer</skills>
+		<autoEnable>true</autoEnable>
+		<template>
+			<inlineTemplate substitution="true">//*
+//SPOC      EXEC PGM=CSLUSPOC,
+//  PARM=('IMSPLEX=${instance-DFS_IMSPlex},ROUTE=${instance-DFS_IMS_SSID},WAIT=30,F=WRAP')
+//STEPLIB   DD DISP=SHR,DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL
+//SYSPRINT  DD SYSOUT=*
+//*
+//*  OLC Commit
+//*  For local OLC: /MODIFY COMMIT
+//*  For global OLC: INIT OLC PHASE(COMMIT)
+//*
+//SYSIN     DD *
+   /MODIFY COMMIT
+/*</inlineTemplate>
+			<submitAs>JCL</submitAs>
+			<maxLrecl>80</maxLrecl>
+		</template>
+	</step>
+
+
+	<step name="DBRC_Delete">
+		<title>Delete from DBRC</title>
+		<description>Delete database information from DBRC</description>
+		<prereqStep name="MOLC_Commit"/>
+		<instructions>Use the DELETE.DB command to delete from the RECON data set a database and all information related to the database that has been recorded in the RECON data set</instructions>
+		<weight>10</weight>
+		<skills>System Programmer</skills>
+		<autoEnable>true</autoEnable>
+		<template>
+			<inlineTemplate substitution="true">//*
+//SPOC      EXEC PGM=DSPURX00
+//STEPLIB   DD DISP=SHR,DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL
+//SYSPRINT  DD SYSOUT=*
+//SYSIN     DD *
+     DELETE.DB DBD(${instance-DBname})
+/*</inlineTemplate>
+			<submitAs>JCL</submitAs>
+			<maxLrecl>80</maxLrecl>
+		</template>
+	</step>
+
+
+	<step name="Clean-Up">
+		<title>Clean up data sets</title>
+		<description>Delete left over datasets</description>
+		<prereqStep name="DBRC_Delete"/>
+		<instructions>This step deletes datasets left over from the database</instructions>
+		<weight>10</weight>
+		<skills>System Programmer</skills>
+		<autoEnable>true</autoEnable>
+		<template>
+			<inlineTemplate substitution="true">//*
+//SCRATCH  EXEC PGM=IDCAMS,DYNAMNBR=300
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD *
+  DELETE ${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.DBD.SOURCE -
+         NONVSAM SCRATCH
+  DELETE ${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.JOBS -
+         NONVSAM SCRATCH
+  DELETE ${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.PSB.SOURCE  -
+         NONVSAM SCRATCH
+  DELETE ${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.STAGING.ACBLIB  -
+         NONVSAM SCRATCH
+  DELETE ${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-AREAname}.IC1 -
+         NONVSAM SCRATCH
+  DELETE ${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-AREAname}.IC2 -
+         NONVSAM SCRATCH
+  DELETE ${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.${instance-DBname}.${instance-AREAname} -
+         CLUSTER
+/*</inlineTemplate>
+			<submitAs>JCL</submitAs>
+			<maxLrecl>80</maxLrecl>
+		</template>
+	</step>
+
+</workflow>

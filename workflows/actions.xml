@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<actionList xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			xsi:noNamespaceSchemaLocation="./actions_v1.xsd">
+	<action name="deprovision">
+		<workflow>
+			<wfDefFile>./Deprovision_IMS_DEDB.xml</wfDefFile>
+			<wfVarInFile>./IMS_DEDB_Input_Variables.properties</wfVarInFile>
+			<wfVar name="DBname">${DBname}</wfVar>
+			<wfVar name="AREAname">${AREAname}</wfVar>
+			<wfVar name="DFS_PSBNAME">${DFS_PSBNAME}</wfVar>
+			<wfVar name="DFS_AUTH_USER_HLQ3">${DFS_AUTH_USER_HLQ3}</wfVar>
+		</workflow>
+	</action>
+</actionList>

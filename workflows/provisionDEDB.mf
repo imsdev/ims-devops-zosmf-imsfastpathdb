@@ -1,0 +1,4 @@
+workflow-definition-file:./Provision_IMS_DEDB.xml
+workflow-variable-input-file:./IMS_DEDB_Input_Variables.properties
+action-definition-file:./actions.xml
+admin-documentation-file:../IMS_FP_DEDB_workflows_for_zOSMF_readme.pdf

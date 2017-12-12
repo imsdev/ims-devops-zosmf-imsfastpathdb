@@ -1,0 +1,1066 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Use encoding IBM-1047 if this workflow definition file is to be held in a z/OS dataset and
+     encoding utf-8 if it is to be held in a UNIX file system     --> 
+
+<!-- Declare external file containing IMS variables referenced in the following steps  -->
+<!DOCTYPE workflow [<!ENTITY copyright "Copyright IBM Corp., 2015"><!ENTITY variables SYSTEM "IMS_DEDB_Variables.xml">]> 
+<!-- <!DOCTYPE workflow [<!ENTITY copyright "Copyright IBM Corp., 2015"><!ENTITY variables SYSTEM "IMS_DEDB_Variables_OLD.xml">]>-->
+
+<workflow xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                          xsi:noNamespaceSchemaLocation="../workflow/schemas/workflow_v1.xsd">
+
+	<!-- ********************************************************** -->
+	<!-- Workflow process information section                        -->
+	<!-- ********************************************************** -->
+	<workflowInfo>
+		<workflowID>Fast Path DEDB Provisioning - PoC</workflowID>
+		<workflowDescription>Fast Path DEDB Provisioning</workflowDescription>
+		<workflowVersion>1.0</workflowVersion>
+		<vendor>IBM</vendor>
+		
+		<!--
+		<Configuration>
+			<productID>5635A0-500</productID>
+			<productName>IMS</productName>
+			<productVersion>Version 14</productVersion>
+		</Configuration>
+		-->
+		<!-- -->
+		<Provisioning>
+			<productID>5635A0-500</productID>
+			<productName>IMS DEDB</productName>
+			<productVersion>Version 14</productVersion>
+			<softwareType>IMSdedb</softwareType>
+		</Provisioning>
+		<!-- -->
+	</workflowInfo>
+
+
+	<!-- ***************************************************** -->
+	<!--     Include IMS variables used by the following steps -->
+	<!-- ***************************************************** -->
+	&variables;
+
+	
+	
+	<!-- ***************************************************** -->
+	<!--     The atCreate variables                            -->
+	<!-- ***************************************************** -->
+	<atCreate name="DBname" required="true" prompt="true"/>
+	<atCreate name="AREAname" required="true" prompt="true"/>
+	<atCreate name="DFS_PSBNAME" required="true" prompt="true"/>
+	<atCreate name="DFS_AUTH_USER_HLQ3" required="true" prompt="true"/>
+
+
+	<!-- ********************************************************** -->
+	<!-- ********************************************************** -->
+	<!-- Define the steps of the workflow process                   -->
+	<!-- ********************************************************** -->
+	<!-- ********************************************************** -->
+	
+	<!-- Environment Information Verification -->
+	<step name="Env_var_gathering" >
+		<title>Environment variable information gathering</title>
+        <description>
+			This step will allow you to enter the information needed for the IMS Database (DEDB) package process to be executed
+        </description>
+		<variableValue name="DFS_AUTH_LIB_HLQ" scope="instance" required="true" noPromptIfSet="false"/>
+		<variableValue name="DFS_AUTH_LIB_HLQ2" required="true" scope="instance" noPromptIfSet="false"/>			<!-- High level DSNAME qualifier for IMS data sets -->
+		<variableValue name="DFS_AUTH_USER_HLQ3" scope="instance" required="true" noPromptIfSet="false"/>
+		<variableValue name="DFS_IMSPlex" required="true" scope="instance" noPromptIfSet="false"/>		<!-- The IMS PLEX name  -->
+		<variableValue name="DFS_IMS_SSID" required="true" scope="instance" noPromptIfSet="false"/>
+		<variableValue name="zCloud_IMSDEV" required="true" scope="instance" noPromptIfSet="false"/>
+		<variableValue name="zCloud_IMSDEV2" required="true" scope="instance" noPromptIfSet="false"/>
+		<variableValue name="DFS_DS_VOLUME1" required="true" scope="instance" noPromptIfSet="false"/>
+		<variableValue name="zCloud_MACLIB" required="true" scope="instance" noPromptIfSet="false"/>
+		<variableValue name="DBname" required="true"/>
+		<variableValue name="AREAname" required="true"/>
+		<variableValue name="AREAsize" required="true"/>
+		<variableValue name="AREArootNum2" required="true"/>
+		<variableValue name="AREArootOverflow2" required="true"/>
+		<variableValue name="AREAuowNumber1" required="true"/>
+		<variableValue name="AREAuowOverflow1" required="true"/>
+		<variableValue name="appname" required="true"/>
+		<variableValue name="DFS_PSBNAME" required="true"/>
+		
+		<!--       SEGM 1              -->
+		<variableValue name="Segm1Type" required="true"/>
+		<variableValue name="Segm1Name" required="true"/>
+		<variableValue name="Segm1MaxLength" required="true"/>
+		<variableValue name="Segm1MinLength" required="true"/>
+		<variableValue name="Field1Name1" required="true"/>
+		<variableValue name="Field1Start1" required="true"/>
+		<variableValue name="Field1Length1" required="true"/>
+		<variableValue name="VERSION" required="true"/>
+		<instructions substitution="true">The following information will be used by this workflow and all its substeps:
+<ul>
+<li>${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2} are the IMS libraries High Level Qualifier used by this workflow</li>
+<li>>The IMSID on which the DB is deployed on is: ${instance-DFS_IMS_SSID}. IMSPlex: ${instance-DFS_IMSPlex}.</li>
+<li>The authorized PROCLIB that will be used is:  ${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.PROCLIB </li>
+<li>The Staging ACB for IMS Member online change is ${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.ACBLIB</li>
+<li>The volume used to allocate all the work datasets is ${instance-zCloud_IMSDEV}. </li>
+</ul>
+<p>	
+This configuration information are saved also in the file IMS_CloudDB.txt
+</p>
+		</instructions>
+		<weight>10</weight>
+		<skills>System Programmer</skills>
+		<autoEnable>true</autoEnable>
+	</step>
+
+
+	<step name="Alloc_DBDeploy_DS"> 						
+		<title>Allocate datasets for DB deployment </title>
+		<description>Allocate datasets for DB deployment on a zCloud IMS</description>
+		<prereqStep name="Env_var_gathering"/>
+		<instructions substitution="true"> This step allocates a work data set needed for the workflow.</instructions>
+		<weight>10</weight>
+		<skills>System Admin</skills>
+		<autoEnable>true</autoEnable>
+		<template>
+			<inlineTemplate substitution="true">//*                                                                   *
+//* ALLOCATE WORK DATA SETS
+//************************************************************@SCPYRT**
+//*                                                                   *
+//*  LICENSED MATERIALS - PROPERTY OF IBM                             *
+//*                                                                   *
+//*  5635-A05                                                         *
+//*                                                                   *
+//*      COPYRIGHT IBM CORP. 1989,1998 ALL RIGHTS RESERVED            *
+//*                                                                   *
+//*  US GOVERNMENT USERS RESTRICTED RIGHTS - USE, DUPLICATION OR      *
+//*  DISCLOSURE RESTRICTED BY GSA ADP SCHEDULE CONTRACT WITH          *
+//*  IBM CORP.                                                        *
+//*                                                                   *
+//************************************************************@ECPYRT**
+//* DETERMINE IF THE DATA SETS ALREADY EXIST
+//*
+//* FILE NOT EXISTING :  RC = 12
+//* EMPTY FILE        :  RC = 04
+//* DATA FILE         :  RC = 00
+//*******************************************************
+//*  CHECK FOR DBD.SOURCE LIB IF NOT THERE ALLOCATE IT
+//*******************************************************
+//CHECKDS1  EXEC PGM=IDCAMS
+//SYSUDUMP DD DUMMY
+//SYSOUT   DD SYSOUT=*
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD *
+  PRINT IDS('${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.DBD.SOURCE') -
+      CHARACTER COUNT(1)
+/*
+//ALLOCAT1 EXEC PGM=IDCAMS,DYNAMNBR=200,COND=(04,GT,CHECKDS1)
+//AMSDUMP  DD SYSOUT=*
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD *
+  ALLOCATE -
+      DSNAME('${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.DBD.SOURCE')  -
+      FILE(INSTALL)               -
+	  RECFM(F,B)                  -
+      LRECL(80)                   -
+      BLKSIZE(3200)               -
+      DSORG(PO)                   -
+      DSNTYPE(PDS)                -
+      NEW CATALOG                 -
+      SPACE(5,2) CYL              -
+      DIR(46)                     -
+      VOL(${instance-DFS_DS_VOLUME1})                 -
+      UNIT(${instance-zCloud_IMSDEV})
+//********************************************************
+//*  CHECK FOR PSB.SOURCE LIB IF NOT THERE ALLOCATE IT
+//********************************************************
+//CHECKDS2  EXEC PGM=IDCAMS
+//SYSUDUMP DD DUMMY
+//SYSOUT   DD SYSOUT=*
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD *
+  PRINT IDS('${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.PSB.SOURCE') -
+      CHARACTER COUNT(1)              /*
+//*
+//ALLOCAT2 EXEC PGM=IDCAMS,DYNAMNBR=200,COND=(04,GT,CHECKDS2)
+//AMSDUMP  DD SYSOUT=*
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD *
+  ALLOCATE -
+      DSNAME('${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.PSB.SOURCE')  -
+      FILE(INSTALL)               -
+	  RECFM(F,B)                  -
+      LRECL(80)                   -
+      BLKSIZE(3200)               -
+      DSORG(PO)                   -
+      DSNTYPE(PDS)                -
+      NEW CATALOG                 -
+      SPACE(5,2) CYL              -
+      DIR(46)                     -
+      VOL(${instance-DFS_DS_VOLUME1})                 -
+      UNIT(${instance-zCloud_IMSDEV})
+//*******************************************************
+//*  CHECK FOR JOBS LIB IF NOT THERE ALLOCATE IT
+//*******************************************************
+//CHECKDS3  EXEC PGM=IDCAMS
+//SYSUDUMP DD DUMMY
+//SYSOUT   DD SYSOUT=*
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD *
+  PRINT IDS('${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.JOBS') -
+      CHARACTER COUNT(1)              /*
+//*
+//ALLOCAT3 EXEC PGM=IDCAMS,DYNAMNBR=200,COND=(04,GT,CHECKDS3)
+//AMSDUMP  DD SYSOUT=*
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD *
+  ALLOCATE -
+     DSNAME('${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.JOBS') -
+     FILE(JOBS)                  -
+     VOL(${instance-DFS_DS_VOLUME1})              -
+     UNIT(${instance-zCloud_IMSDEV})             -
+     RECFM(F,B)                  -
+     LRECL(80)                   -
+     BLKSIZE(0)          -
+     DSORG(PO)                   -
+     DSNTYPE(PDS)                -
+     DIR(46)              -
+     NEW CATALOG                 -
+     SPACE(1,1) CYL
+//*
+//********************************************************
+//*  CHECK FOR STAGING.ACBLIB LIB IF NOT THERE ALLOCATE IT
+//********************************************************
+//CHECKDS4  EXEC PGM=IDCAMS
+//SYSUDUMP DD DUMMY
+//SYSOUT   DD SYSOUT=*
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD *
+  PRINT IDS('${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.STAGING.ACBLIB') -
+      CHARACTER COUNT(1)              /*
+//*
+//*
+//ALLOCAT4 EXEC PGM=IDCAMS,DYNAMNBR=200,COND=(04,GT,CHECKDS4)
+//AMSDUMP  DD SYSOUT=*
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD *
+  ALLOCATE -
+      DSNAME('${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.STAGING.ACBLIB') -
+      FILE(ACBLIBA)               -
+      VOL(${instance-DFS_DS_VOLUME1})              -
+      UNIT(${instance-zCloud_IMSDEV})             -
+      RECFM(U)                    -
+      BLKSIZE(32760)          -
+      DSORG(PO)                   -
+      DSNTYPE(PDS)                -
+      DIR(92)              -
+      NEW CATALOG                 -
+      SPACE(2,2) CYL </inlineTemplate>
+			<submitAs maxRc="12">JCL</submitAs>
+			<maxLrecl>80</maxLrecl>
+		</template>
+	</step>
+
+
+	<step name="Deploy_DB">
+		<title>Database Deployment</title>
+		<description>
+			This step will create an IMS Database Descriptor (DBD) for database, and prepare all the resource needed to deploy it
+		</description>
+		<prereqStep name="Alloc_DBDeploy_DS"/>
+
+
+		<step name="Create_DB_Struct"> 					
+			<title>Create DB Structure</title>
+			<description>Create DBD based on defined DB structure</description>
+			<instructions substitution="true"> The values you entered in the previous panels will be used to deploy your IMS DEDB Data Base ${instance-DBname}.
+<br></br>The default dataset name for this database is: ${instance-DFS_AUTH_LIB_HLQ}.${instance-DBname}.${instance-AREAname}, using the AREA name ${instance-AREAname}.
+You can save a copy of the resulting IMS DataBase descriptor (DBD) <em>after</em> you have inspected it: ${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.DBD.SOURCE(${instance-DBname})
+			</instructions>
+			<weight>10</weight>
+			<skills>DB Admin</skills>
+			<autoEnable>true</autoEnable>
+			<template>
+				<inlineTemplate substitution="true">*
+ PRINT NOGEN
+********************************************************************
+ TITLE '${instance-VERSION} DEDB DATABASE'
+********************************************************************
+*
+ DBD ACCESS=(DEDB),NAME=${instance-DBname},RMNAME=(DBFHDC40)
+*
+ AREA  DD1=${instance-AREAname},DEVICE=3390,SIZE=${instance-AREAsize},ROOT=(${instance-AREArootNum2},${instance-AREArootOverflow2}),UOW=(${instance-AREAuowNumber1},${instance-AREAuowOverflow1})            
+*
+ SEGM NAME=${instance-Segm1Name},PARENT=0,BYTES=(${instance-Segm1MaxLength},${instance-Segm1MinLength})
+ FIELD NAME=(${instance-Field1Name1},SEQ,U),BYTES=${instance-Field1Length1},START=${instance-Field1Start1},TYPE=X
+*
+ DBDGEN
+ FINISH
+ END   </inlineTemplate>
+				<saveAsDataset substitution="true">${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.DBD.SOURCE(${instance-DBname})</saveAsDataset>
+			</template>
+		</step>
+
+		
+		<step name="DBDgen"> 							
+			<title>Compile/Link IMS Data Base Descriptor definitions (DBD)</title>
+			<description>Store Database Descriptor source in work library</description>
+			<prereqStep name="Create_DB_Struct"/>
+			<instructions substitution="true">Compile and link the IMS database definitions (DBD)</instructions>
+			<weight>10</weight>
+			<skills>DB Admin</skills>
+			<autoEnable>true</autoEnable>
+			<template>
+				<inlineTemplate substitution="true">//***  BEGIN OF DBDGEN ***
+//C        EXEC PGM=ASMA90,REGION=0M,
+//            PARM=(OBJECT,NODECK,NODBCS,
+//            'SIZE(MAX,ABOVE)')
+//SYSLIB   DD DISP=SHR,DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.ADFSMAC
+//SYSLIN   DD UNIT=SYSDA,DISP=(,PASS),
+//         SPACE=(80,(100,100),RLSE),
+//         DCB=(BLKSIZE=80,RECFM=F,LRECL=80)
+//SYSPRINT DD SYSOUT=*,DCB=BLKSIZE=1089,
+//         SPACE=(121,(300,300),RLSE,,ROUND)
+//SYSIN    DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.DBD.SOURCE(${instance-DBname}),
+//         DISP=SHR
+//SYSUT1   DD UNIT=SYSDA,DISP=(,DELETE),
+//         SPACE=(CYL,(10,5))
+//LNKDBD  EXEC PGM=IEWL,PARM='XREF,LIST',
+//            COND=(0,LT,C),REGION=4M
+//SYSLIN   DD DSN=*.C.SYSLIN,DISP=(OLD,DELETE)
+//SYSPRINT DD SYSOUT=*,DCB=BLKSIZE=1089,
+//         SPACE=(121,(90,90),RLSE)
+//SYSPRINT DD SYSOUT=*,DCB=BLKSIZE=1089,
+//         SPACE=(121,(90,90),RLSE)
+//SYSLMOD  DD DISP=SHR,
+//         DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.DBDLIB(${instance-DBname})
+//SYSUT1   DD UNIT=(SYSDA,SEP=(SYSLMOD,SYSLIN)),
+//         SPACE=(1024,(100,10),RLSE),DISP=(,DELETE)
+//***  END OF DBDGEN ***</inlineTemplate>
+				<submitAs>JCL</submitAs>
+				<maxLrecl>80</maxLrecl>
+				<saveAsDataset substitution="true">${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.JOBS(ASMLKDBD)</saveAsDataset>
+			</template>
+		</step>
+	
+	
+		<step name="Create_PSB_Struct">
+			<title>Create the IMS Program Specification definitions (PSB)</title>
+			<description>Store Database Descriptor source in work library</description>
+			<prereqStep name="DBDgen"/>
+			<instructions substitution="true">Create the IMS program specification block (PSB)</instructions>
+			<weight>10</weight>
+			<skills>DB Admin</skills>
+			<autoEnable>true</autoEnable>
+			<template>
+				<inlineTemplate substitution="true">*
+ PRINT NOGEN
+*   PCB USED FOR INITIAL LOAD OF the DB: ${instance-DBname}
+ PCB TYPE=DB,DBDNAME=${instance-DBname},PROCOPT=A,KEYLEN=100,PCBNAME=XXPCB
+ SENSEG NAME=${instance-Segm1Name}
+*
+ PSBGEN LANG=PL/I,PSBNAME=${instance-DFS_PSBNAME},CMPAT=YES
+ END</inlineTemplate>
+				<saveAsDataset substitution="true">${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.PSB.SOURCE(${instance-DFS_PSBNAME})</saveAsDataset>
+			</template>
+		</step>
+
+
+		<step name="PSBgen" optional="true">
+			<title>Compile and link the IMS program specification block (PSB)</title>
+			<description>Compile and link the IMS program specification block (PSB)</description>
+			<prereqStep name="Create_PSB_Struct"/>
+			<instructions substitution="true">
+				Compile and link the IMS program specification block (PSB). You can save a copy of this job <em>after</em> you
+				have inspected it. It will be stored in: ${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.JOBS(ASMLKPSB) for future reference.
+			</instructions>
+			<weight>10</weight>
+			<skills>DB Admin</skills>
+			<autoEnable>true</autoEnable>
+			<template>
+				<inlineTemplate substitution="true">//***  BEGIN OF PSBGEN ***
+//C      EXEC PGM=ASMA90,REGION=0M,
+//            PARM=(OBJECT,NODECK,NODBCS,
+//            'SIZE(MAX,ABOVE)')
+//SYSLIB   DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.ADFSMAC,
+//             DISP=SHR
+//SYSLIN   DD UNIT=SYSDA,DISP=(,PASS),
+//         SPACE=(80,(100,100),RLSE),
+//         DCB=(BLKSIZE=80,RECFM=F,LRECL=80)
+//SYSPRINT DD SYSOUT=*,DCB=BLKSIZE=1089,
+//         SPACE=(121,(300,300),RLSE,,ROUND)
+//SYSUT1   DD UNIT=SYSDA,DISP=(,DELETE),
+//         SPACE=(CYL,(10,5))
+//SYSIN    DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.PSB.SOURCE(${instance-DFS_PSBNAME}),
+//            DISP=SHR
+//L      EXEC PGM=IEWL,PARM='XREF,LIST',
+//            COND=(0,LT,C),REGION=4M
+//SYSLIN   DD DSN=*.C.SYSLIN,DISP=(OLD,DELETE)
+//SYSPRINT DD SYSOUT=*,DCB=BLKSIZE=1089,
+//         SPACE=(121,(90,90),RLSE)
+//SYSLMOD  DD DISP=SHR,
+//         DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.PSBLIB(${instance-DFS_PSBNAME})
+//SYSUT1   DD UNIT=(SYSDA,SEP=(SYSLMOD,SYSLIN)),
+//         SPACE=(1024,(100,10),RLSE),DISP=(,DELETE)
+//*
+//***  END OF PSBGEN ***</inlineTemplate>
+				<submitAs maxRc="4">JCL</submitAs>
+				<maxLrecl>80</maxLrecl>
+				<saveAsDataset substitution="true">${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.JOBS(ASMLKPSB)</saveAsDataset>
+			</template>
+		</step>
+
+		
+		<step name="ACBgen" optional="true"> 			
+			<title>Perform ACBGEN for the DBD and PSB (optional)</title>
+			<description>
+				Perform ACBGEN for the DBD and PSB and store it in the IMS Staging libraries.
+				This step might not be necessary if you already deployed the IMS resources associated to this Database 
+			</description>
+			<prereqStep name="PSBgen"/>
+			<instructions substitution="true">
+				This substep performs the ACBGEN for the DBD and PSB and store them in the IMS Staging library indicated: ${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.STAGING.ACBLIB.
+				This step might not be necessary if you already defined the required IMS resources, or you already deployed the cloud Database.
+			</instructions>
+			<weight>10</weight>
+			<skills>DB Admin</skills>
+			<autoEnable>true</autoEnable>
+			<template>
+				<inlineTemplate substitution="true">//ACBGEN1    EXEC PGM=DFSRRC00,PARM='UPB',REGION=512K
+//STEPLIB  DD  DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL,
+//             DISP=SHR
+//DFSRESLB DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL,
+//            DISP=SHR
+//SYSPRINT DD  SYSOUT=*
+//SYSUDUMP DD  SYSOUT=*
+//IMS      DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.DBDLIB,
+//            DISP=SHR
+//         DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.PSBLIB,
+//            DISP=SHR
+//IMSACB   DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.STAGING.ACBLIB,
+//            DISP=SHR
+//SYSUT3   DD  UNIT=SYSDA,SPACE=(80,(100,100))
+//SYSUT4   DD  UNIT=SYSDA,SPACE=(256,(100,100)),DCB=KEYLEN=8
+//SYSIN   DD *
+  BUILD PSB=${instance-DFS_PSBNAME}  
+/*
+//ACBGEN2    EXEC PGM=DFSRRC00,PARM='UPB',REGION=512K
+//STEPLIB  DD  DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL,
+//             DISP=SHR
+//DFSRESLB DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL,
+//            DISP=SHR
+//SYSPRINT DD  SYSOUT=*
+//SYSUDUMP DD  SYSOUT=*
+//IMS      DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.DBDLIB,
+//            DISP=SHR
+//         DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.PSBLIB,
+//            DISP=SHR
+//IMSACB   DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.STAGING.ACBLIB,
+//            DISP=SHR
+//SYSUT3   DD  UNIT=SYSDA,SPACE=(80,(100,100))
+//SYSUT4   DD  UNIT=SYSDA,SPACE=(256,(100,100)),DCB=KEYLEN=8
+//SYSIN   DD *
+  BUILD DBD=${instance-DBname}
+/*</inlineTemplate>  <!-- removed 'BUILD DBD=${instance-DBname}' -->
+				<submitAs>JCL</submitAs>
+				<maxLrecl>80</maxLrecl>
+				<saveAsDataset substitution="true">${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.JOBS(ACBGEN)</saveAsDataset>
+			</template>
+		</step>
+
+	
+		<step name="Alloc_DB_DS"> 						
+			<title>Allocate DataBase data set(s)</title>
+			<description>Allocate all the dataset(s) that constitute the IMS Database</description>
+			<instructions>
+				This step will allocate all the default data sets needed to deploy your database.
+				<p>
+				If you already have a DB defined and initialized you can skip this step and mark it as "override complete".
+				</p>
+			</instructions>
+			<weight>10</weight>
+			<skills>Application Programmer</skills>
+			<autoEnable>true</autoEnable>
+			<template>
+				<inlineTemplate substitution="true">//********************************************
+//* ALLOCATE DATABASE DATA SET(S) AND IC DATASETS
+//********************************************
+//*
+//ALLOCATE EXEC PGM=IDCAMS,DYNAMNBR=200
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD *
+    DEFINE CLUSTER ( -
+	 NAME(${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.${instance-DBname}.${instance-AREAname}) -
+     VOLUMES (* *) -
+     CYLINDERS (50 50) -
+     REUSE -
+     SHR(3 3) -
+     CISZ(${instance-AREAsize})  -
+     RECORDSIZE  (4089 4089)  - 
+     NONINDEXED SPEED) -
+     DATA(NAME(${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.${instance-DBname}.${instance-AREAname}.DATA))
+    ALLOC -
+     DSNAME('${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-AREAname}.IC1') -
+     SPACE(50,50) CYLINDERS -
+     DSNTYPE(BASIC) -
+     DSORG(PS)
+    ALLOC -
+     DSNAME('${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-AREAname}.IC2') -
+     SPACE(50,50) CYLINDERS -
+     DSNTYPE(BASIC) -
+     DSORG(PS)
+//****</inlineTemplate>
+				<submitAs>JCL</submitAs>
+				<maxLrecl>80</maxLrecl>
+				<saveAsDataset substitution="true">${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.JOBS(DBDSALLC)</saveAsDataset>
+			</template>
+		</step>
+
+		<step name="DBRC_Init" optional="true">
+			<title>DBRC Definitions(DBRC INIT)</title>
+			<description>Define the database to the IMS Database Recovery Control (DBRC INIT)</description>
+			<instructions>Declare the IMS Database to deploy to the DBRC for database recovery an tracking</instructions>
+			<weight>10</weight>
+			<skills>DB Admin</skills>
+			<autoEnable>true</autoEnable>
+			<template>
+				<inlineTemplate substitution="true">//INIT.DB    EXEC PGM=DSPURX00,REGION=4096K
+//STEPLIB  DD  DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL,
+//             DISP=SHR
+//DFSRESLB DD  DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL,
+//             DISP=SHR
+//JCLPDS   DD  DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.JOBS,DISP=SHR
+//JCLOUT   DD  SYSOUT=(*,INTRDR)
+//SYSPRINT DD  SYSOUT=*
+//IMS      DD  DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.DBDLIB,DISP=SHR
+//RECON1   DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.RECON1,DISP=SHR
+//RECON2   DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.RECON2,DISP=SHR
+//RECON3   DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.RECON3,DISP=SHR
+//SYSIN    DD *
+  INIT.DB DBD(${instance-DBname}) TYPEFP SHARELVL(3)
+  INIT.DBDS DBD(${instance-DBname}) GENMAX(2) AREA(${instance-AREAname}) REUSE
+  INIT.ADS DBD(${instance-DBname}) AREA(${instance-AREAname}) ADDN(${instance-AREAname}) UNAVAIL -
+     ADSN(${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.${instance-DBname}.${instance-AREAname})
+  INIT.IC   DBD(${instance-DBname}) AREA(${instance-AREAname}) ICDSN(${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-AREAname}.IC1)
+  INIT.IC   DBD(${instance-DBname}) AREA(${instance-AREAname}) ICDSN(${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-AREAname}.IC2)
+/*</inlineTemplate>
+				<submitAs>JCL</submitAs>
+				<maxLrecl>80</maxLrecl>
+				<saveAsDataset substitution="true">${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.JOBS(DBRCINT)</saveAsDataset>
+			</template>
+		</step>
+
+		
+		<step name="DEDB_Init">
+			<title>Initialize DataBase data set(s)</title>
+			<description>Run the DEDB Initialization utility</description>
+			<instructions>
+				This step prepares the file for use as a DEDB.
+				<p>
+				If you already have a DB defined and initialized you can skip this step and mark it as "override complete".
+				</p>
+			</instructions>
+			<weight>10</weight>
+			<skills>Application Programmer</skills>
+			<autoEnable>true</autoEnable>
+			<template>
+				<inlineTemplate substitution="true">//********************************************
+//* Initialize DEDB
+//********************************************
+//*
+//INITDEDB EXEC PGM=DBFUMIN0,PARM='DBRC=Y'
+//STEPLIB  DD  DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL,
+//             DISP=SHR
+//ACBLIB   DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.STAGING.ACBLIB(${instance-DBname}),
+//            DISP=SHR
+//SYSPRINT DD SYSOUT=*
+//${instance-AREAname}    DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.${instance-DBname}.${instance-AREAname},
+//            DISP=SHR
+//CONTROL  DD *
+ALL
+//****</inlineTemplate>
+				<submitAs>JCL</submitAs>
+				<maxLrecl>80</maxLrecl>
+				<saveAsDataset substitution="true">${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.JOBS(INITDEDB)</saveAsDataset>
+			</template>
+		</step>
+
+		<step name="Define_DB_MDA">
+			<title>Define IMS Database for Dynamic Allocation (MDA)</title>
+			<description>Define IMS Database for Dynamic Allocation (MDA)</description>
+			<instructions>
+				Use the IMS database dynamic allocation macro (DFSMDA) as a way to control resources allocation from a central point. You do not have to change DBCTL JCL or batch job JCL in order
+				to change a data set name. It avoids possible confusion over which DBCTL address space requires the DD statement for a database, because the library with the DFSMDA members can be concatenated in the STEPLIB DD
+				statement. If you do not use DFSMDA, DL/I database DD statements must be in the DLISAS (DLS) address space, and DEDB DD statements must be in the DBCTL (DBC) address space. To use dynamic allocation, you need one
+				member per database in the IMS.RESLIB library (or an authorized STEPLIB library), using the IMSDALOC procedure to assemble and link-edit the appropriate DFSMDA macros. See IMS System Administration
+				Guide or "IMS Administration Guide: System" for general guidance on dynamic allocation and <a href="http://publib.boulder.ibm.com/infocenter/dzichelp/v2r2/index.jsp?topic=%2Fcom.ibm.ims11.doc.dur%2Fdur.htm">Database administration</a>
+				for guidance on using the DFSMDA macro.
+			</instructions>
+			<weight>10</weight>
+			<skills>DB Admin</skills>
+			<autoEnable>true</autoEnable>
+			
+			<template>
+				<fileTemplate substitution="true">jcl/DFSDBMDA.jcl</fileTemplate>
+				<submitAs>JCL</submitAs>
+				<maxLrecl>80</maxLrecl>
+				<saveAsDataset substitution="true">${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.JOBS(DBMDA)</saveAsDataset>
+			</template>
+		</step>
+
+
+<!-- 	<step name="DBRC_ImageCopy"> 					<title>DBRC Processing(DBRC IC)</title>
+			<description>Perform an Image Copy (IC) of the IMS Database </description>
+			<instructions>Perform an Image Copy (IC) of the IMS Database to deploy for recovery an tracking</instructions>
+			<weight>5</weight>
+			<skills>DB Admin</skills>
+			<template>
+			<inlineTemplate substitution="true">//CLOUDIC    EXEC PGM=DSPURX00,REGION=4096K
+//STEPLIB  DD  DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL,
+//             DISP=SHR
+//*        DD  DSN=${instance-EXITLIB},DISP=SHR
+//DFSRESLB DD  DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL,
+//             DISP=SHR
+//JCLPDS   DD  DSN=${instance-DFS_AUTH_LIB_HLQ}.JOBS,DISP=SHR
+//JCLOUT   DD  SYSOUT=(*,INTRDR)
+//SYSPRINT DD  SYSOUT=*
+//RECON1   DD DSN=${instance-recon1},DISP=SHR
+//RECON2   DD DSN=${instance-recon2},DISP=SHR
+//RECON3   DD DSN=${instance-recon3},DISP=SHR
+//IMS      DD  DSN=${instance-DFS_AUTH_LIB_HLQ}.DBDLIB,DISP=SHR
+//SYSIN    DD  *
+ GENJCL.IC DBD(${instance-DBname}) ONEJOB JOB(ICJCL) NOCIC LIST
+/*
+//*</inlineTemplate>
+				<submitAs maxRc="4">JCL</submitAs>
+				<saveAsDataset substitution="true">${instance-DFS_AUTH_LIB_HLQ}.JOBS(DBIC)</saveAsDataset>
+			</template>
+		</step> -->
+
+
+		<step name="Def_MDA_ACBLib_Staging">
+			<title>Define IMS Dynamic Allocation (MDA) for staging ACBLIB</title>
+			<description>Define IMS Database for Dynamic Allocation (MDA)</description>
+			<instructions>
+				Use the IMS database dynamic allocation macro (DFSMDA) as a way to control resources allocation from a central point. You do not have to change DBCTL JCL or batch job JCL in order
+				to change a data set name. It avoids possible confusion over which DBCTL address space requires the DD statement for a database, because the library with the DFSMDA members can be concatenated in the STEPLIB DD
+				statement. If you do not use DFSMDA, DL/I database DD statements must be in the DLISAS (DLS) address space, and DEDB DD statements must be in the DBCTL (DBC) address space. To use dynamic allocation, you need one
+				member per database in the IMS.RESLIB library (or an authorized STEPLIB library), using the IMSDALOC procedure to assemble and link-edit the appropriate DFSMDA macros. See IMS System Administration
+				Guide or "IMS Administration Guide: System" for general guidance on dynamic allocation and <a href="http://publib.boulder.ibm.com/infocenter/dzichelp/v2r2/index.jsp?topic=%2Fcom.ibm.ims11.doc.dur%2Fdur.htm">Database administration</a>
+				for guidance on using the DFSMDA macro.
+			</instructions>
+			<weight>10</weight>
+			<skills>DB Admin</skills>
+			<autoEnable>true</autoEnable>
+			<template>
+				<inlineTemplate substitution="true">//IMSDALOC PROC
+//*----------------------------------------------------
+//*  Dynamic allocate for shared STAGE ACBLIB.
+//*-----------------------------------------------------
+//ASSEM  EXEC PGM=ASMA90,
+//            PARM='ALIGN,DECK,NOOBJECT,NODBCS'
+//SYSLIB   DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.ADFSMAC,DISP=SHR
+//         DD DSN=${instance-zCloud_MACLIB},DISP=SHR
+//SYSUT1   DD UNIT=SYSDA,SPACE=(CYL,(10,5))
+//SYSPUNCH DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.OBJMOD.DFSMDA,
+//         DCB=(RECFM=FB,LRECL=80,BLKSIZE=400),
+//         SPACE=(400,(100,100)),UNIT=SYSDA,
+//         DISP=(NEW,PASS)
+//SYSPRINT DD SYSOUT=*
+//BLDMBR EXEC PGM=IEBUPDTE,PARM='NEW',
+//            COND=(7,LT,ASSEM)
+//SYSPRINT DD DUMMY
+//SYSUT2   DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.TEMPPDS,UNIT=SYSDA,
+//         DISP=(NEW,PASS,DELETE),
+//         SPACE=(80,(10,10,10)),
+//         DCB=(RECFM=F,BLKSIZE=80)
+//SYSIN    DD DSN=*.ASSEM.SYSPUNCH,
+//         DISP=(OLD,DELETE,DELETE)
+//LNKEDT EXEC PGM=IEWL,PARM='LIST,XREF,LET',
+//            COND=((7,LT,ASSEM),(3,LT,BLDMBR))
+//SYSUT1   DD UNIT=SYSDA,SPACE=(1024,(100,50))
+//SYSLIB   DD DUMMY
+//SYSPRINT DD SYSOUT=*
+//SYSLMOD  DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL,
+//            DISP=SHR
+//OBJMOD   DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.TEMPPDS,
+//            DISP=(OLD,DELETE,DELETE)
+//SYSLIN   DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.TEMPPDS(LNKCTL),
+//         DISP=(OLD,DELETE,DELETE),
+//         VOL=REF=*.OBJMOD
+//         PEND
+//STEP01   EXEC PROC=IMSDALOC
+//ASSEM.SYSIN DD *
+*
+* START
+*
+  DFSMDA TYPE=INITIAL
+*
+* Staging ACBLIB
+*
+  DFSMDA TYPE=IMSACB,DSNAME=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.STAGING.ACBLIB
+*
+  DFSMDA TYPE=FINAL
+       END
+/*
+//*</inlineTemplate>
+				<submitAs>JCL</submitAs>
+				<maxLrecl>80</maxLrecl>
+				<saveAsDataset substitution="true">${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.JOBS(ACBSTMDA)</saveAsDataset>
+			</template>
+		</step>
+
+	</step>  <!-- End of "Deploy_DB" parent step -->
+
+
+	<step name="Resource_Def_forDB">
+		<title>IMS Resources Definitions for your Database</title>
+		<description>Define and ready all the IMS Resources associated with your Database</description>
+		<prereqStep name="Deploy_DB"/>
+
+
+		<step name="Define_PSBtoIMS"> 			
+			<title>Define your program access (PSB) to IMS </title>
+			<description>Define the access (PSB) to be used by an application (TSOSPOC CREATE PGM)</description>			
+			<instructions>Study this sample</instructions>
+			<weight>10</weight>
+			<skills>DB Admin</skills>
+			<autoEnable>true</autoEnable>
+			<template>
+				<inlineTemplate substitution="true">//*
+//SPOC      EXEC PGM=CSLUSPOC,
+//  PARM=('IMSPLEX=${instance-DFS_IMSPlex},ROUTE=${instance-DFS_IMS_SSID},WAIT=30,F=WRAP')
+//STEPLIB   DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL,
+//          DISP=SHR
+//SYSPRINT  DD SYSOUT=*
+//SYSIN     DD *
+	CREATE PGM NAME(${instance-DFS_PSBNAME}) SET( BMPTYPE(Y) DOPT(N) +
+    FP(N) GPSB(N) RESIDENT(N) SCHDTYPE(PARALLEL) TRANSTAT(N))
+/*</inlineTemplate>
+				<submitAs>JCL</submitAs>
+				<maxLrecl>80</maxLrecl>
+				<saveAsDataset substitution="true">${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.JOBS(CREPGM)</saveAsDataset>
+			</template>
+		</step>
+
+
+		<step name="Define_DBtoIMS">
+			<title>Define your Database to IMS </title>
+			<description>Define your Database to IMS (TSOSPOC CREATE DB)</description>
+			<prereqStep name="Define_PSBtoIMS"/>
+			<instructions>Define your IMS Database in order to be used by an application (TSOSPOC CREATE DB)</instructions>
+			<weight>10</weight>
+			<skills>DB Admin</skills>
+			<autoEnable>true</autoEnable>
+			<template>
+				<inlineTemplate substitution="true">//*
+//SPOC      EXEC PGM=CSLUSPOC,
+//  PARM=('IMSPLEX=${instance-DFS_IMSPlex},ROUTE=${instance-DFS_IMS_SSID},WAIT=30,F=WRAP')
+//STEPLIB   DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL,
+//          DISP=SHR
+//SYSPRINT  DD SYSOUT=*
+//SYSIN     DD *
+     CRE DB NAME(${instance-DBname}) SET(ACCTYPE(UPD))
+/*</inlineTemplate>
+				<submitAs>JCL</submitAs>
+				<maxLrecl>80</maxLrecl>
+				<saveAsDataset substitution="true">${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.JOBS(DEFINEDB)</saveAsDataset>
+			</template>
+		</step>
+
+		
+		<step name="Copy_to_ACBLIB">
+			<title>Prepare Inactive ACBLIB for OLC </title>
+			<description>Prepare Inactive ACBLIB for OLC</description>
+			<prereqStep name="Define_DBtoIMS"/>
+			<instructions>Copy new ACB members along with staging ACBLIB to inactive ACBLIB</instructions>
+			<weight>10</weight>
+			<skills>DB Admin</skills>
+			<autoEnable>true</autoEnable>
+			<template>
+				<inlineTemplate substitution="true">//*
+//PROCLIB  JCLLIB ORDER=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.PROCLIB
+//*
+//*  COPY MEMBERS FROM OUR STAGING LIBRARY TO STAGING ACBLIB
+//*
+//STEP01   EXEC PGM=IEBCOPY
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD DUMMY
+//SYSUT1   DD DISP=SHR,DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.STAGING.ACBLIB
+//SYSUT2   DD DISP=SHR,DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.ACBLIB
+//*
+//*  COPY STAGING ACBLIB TO INACTIVE ACB LIBRARY
+//*
+//STEP02  EXEC PROC=OLCUTL,SOUT='*',TYPE=ACB,IN=S,OUT=U
+/*</inlineTemplate>
+				<submitAs>JCL</submitAs>
+				<maxLrecl>80</maxLrecl>
+				<saveAsDataset substitution="true">${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.JOBS(CPYACBL)</saveAsDataset>
+			</template>
+		</step>
+
+
+		<step name="Member_OLC">
+			<title>Bring online all IMS application-related definitions</title>
+			<description>
+				Use IMS Member Online Change to bring IMS Resources (PSB) online (INITIATE OLC PHASE(PREPARE), INITIATE OLC PHASE(COMMIT)) 
+			</description>
+
+
+			<step name="MOLC_Prepare">
+				<title>INITIATE OLC PHASE(PREPARE)</title>
+				<description>This step issues the OLC Command: INITIATE OLC PHASE(PREPARE)</description>
+				<prereqStep name="Deploy_DB"/>
+				<instructions>Study this sample</instructions>
+				<weight>10</weight>
+				<skills>System Programmer</skills>
+				<autoEnable>true</autoEnable>
+				<template>
+					<inlineTemplate substitution="true">//*
+//SPOC      EXEC PGM=CSLUSPOC,
+//  PARM=('IMSPLEX=${instance-DFS_IMSPlex},ROUTE=${instance-DFS_IMS_SSID},WAIT=30,F=WRAP')
+//STEPLIB   DD DISP=SHR,DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL
+//SYSPRINT  DD SYSOUT=*
+//*
+//*  OLC Prepare
+//*  For local OLC: /MODIFY PREPARE ACBLIB LTERM WTOR
+//*  For global OLC: INIT OLC PHASE(PREPARE) TYPE(ACBLIB) OPTION(FRCABND)
+//*
+//SYSIN     DD *
+   QRY DB  NAME=(${instance-DBname}) SHOW(ALL)
+   /MODIFY PREPARE ACBLIB LTERM WTOR
+/*</inlineTemplate>
+					<submitAs>JCL</submitAs>
+					<maxLrecl>80</maxLrecl>
+					<saveAsDataset substitution="true">${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.JOBS(OLCINIT)</saveAsDataset>
+				</template>
+			</step>
+
+
+			<step name="MOLC_Commit">
+				<title>INITIATE OLC PHASE(COMMIT)</title>
+				<description>This step issues the OLC Command: INITIATE OLC PHASE(COMMIT)</description>
+				<prereqStep name="MOLC_Prepare"/>
+				<instructions>Study this sample</instructions>
+				<weight>10</weight>
+				<skills>System Programmer</skills>
+				<autoEnable>true</autoEnable>
+				<template>
+					<inlineTemplate substitution="true">//*
+//SPOC      EXEC PGM=CSLUSPOC,
+//  PARM=('IMSPLEX=${instance-DFS_IMSPlex},ROUTE=${instance-DFS_IMS_SSID},WAIT=30,F=WRAP')
+//STEPLIB   DD DISP=SHR,DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL
+//SYSPRINT  DD SYSOUT=*
+//*
+//*  OLC Commit
+//*  For local OLC: /MODIFY COMMIT
+//*  For global OLC: INIT OLC PHASE(COMMIT)
+//*
+//SYSIN     DD *
+   /MODIFY COMMIT
+   QRY DB  NAME=(${instance-DBname}) SHOW(ALL)
+/*</inlineTemplate>
+					<submitAs>JCL</submitAs>
+					<maxLrecl>80</maxLrecl>
+					<saveAsDataset substitution="true">${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.JOBS(OLCCOMMT)</saveAsDataset>
+				</template>
+			</step>
+
+		</step>  <!-- End of "Member_OLC" 2nd level parent step -->
+
+	</step>  <!-- End of "Resource_Def_forDB" parent step -->
+
+
+	<step name="Start_IMSResources">
+		<title>Start all the IMS Resources</title>
+		<description>Start all the IMS Resources related to the DataBase to deploy</description>
+		<prereqStep name="Member_OLC"/>
+		
+		
+		<!-- <step name="subStep1_4">
+			<title>Start IMS Dependent Region (MPP,BMP) Optional</title>
+			<description>Start the IMS Region that will be used to process the application program in IMS</description>
+			<instructions>Study this sample</instructions>
+			<weight>5</weight>
+			<skills>System Programmer</skills>
+			<template>
+				<inlineTemplate substitution="true">//SPOC      EXEC PGM=CSLUSPOC,
+//  PARM=('IMSPLEX=${instance-DFS_IMSPlex},ROUTE=${instance-IMSID},WAIT=30,F=WRAP')
+//STEPLIB   DD DISP=SHR,DSN=$global-reslib
+//SYSPRINT  DD SYSOUT=*
+//SYSIN     DD *
+		 /STA REG(MPPCLOUD)
+/*</inlineTemplate>
+				<submitAs>JCL</submitAs>
+					<saveAsDataset substitution="true">${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.JOBS(STAREG)</saveAsDataset>
+			</template>
+		</step> -->
+
+
+		<step name="Start_DB">
+			<title>Start IMS Database (DB)</title>
+			<description>Start the IMS database that your application will access</description>
+			<instructions>Study this sample</instructions>
+			<weight>10</weight>
+			<skills>System Programmer</skills>
+			<autoEnable>true</autoEnable>
+			<template>
+				<inlineTemplate substitution="true">//SPOC      EXEC PGM=CSLUSPOC,
+//  PARM=('IMSPLEX=${instance-DFS_IMSPlex},ROUTE=${instance-DFS_IMS_SSID},WAIT=30,F=WRAP')
+//STEPLIB   DD DISP=SHR,DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL
+//SYSPRINT  DD SYSOUT=*
+//SYSIN     DD *
+       QRY DB  NAME=(${instance-DBname}) SHOW(ALL)
+       /STA DB ${instance-DBname}
+       QRY DB  NAME=(${instance-DBname}) SHOW(ALL)
+/*</inlineTemplate>
+				<submitAs>JCL</submitAs>
+				<maxLrecl>80</maxLrecl>
+				<saveAsDataset substitution="true">${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.JOBS(STADB)</saveAsDataset>
+			</template>
+		</step>
+
+
+		<!--<step name="Start_PGM" optional=true> 			<title>Start IMS Program (optional)</title>
+			<description>Start the IMS program associated with your application</description>
+			<variableValue name="DFS_AUTH_LIB_HLQ" required="true" scope="global"/>
+			<variableValue name="IMSPLEX" required="true" scope="global"/>
+			<variableValue name="IMSID" required="true" scope="global"/>
+			<variableValue name="DFS_PSBNAME" required="true"/>
+			<variableValue name="reslib" required="true" scope="global"/>
+			<instructions>Study this sample</instructions>
+			<weight>5</weight>
+			<skills>System Programmer</skills>
+			<autoEnable>false</autoEnable>
+			<template>
+				<inlineTemplate substitution="true">//SPOC      EXEC PGM=CSLUSPOC,
+//  PARM=('IMSPLEX=${instance-IMSPLEX},ROUTE=${instance-IMSID},WAIT=30,F=WRAP')
+//STEPLIB   DD DISP=SHR,DSN=$global-reslib
+//SYSPRINT  DD SYSOUT=*
+//SYSIN     DD *
+	/STA PGM ${instance-DFS_PSBNAME}
+/*   </inlineTemplate>
+				<submitAs>JCL</submitAs>
+				<saveAsDataset substitution="true">${instance-DFS_AUTH_LIB_HLQ}.JOBS(STAPGM)</saveAsDataset>
+			</template>
+		</step>
+
+
+		<step name="subStep3_4">
+			<title>Start IMS Transaction (optional)</title>
+			<description>Start the IMS transaction associated with your application (optional)</description>
+			<variableValue name="DFS_AUTH_LIB_HLQ" required="true" scope="global"/>
+			<variableValue name="IMSPLEX" required="true"  scope="global"/>
+			<variableValue name="IMSID" required="true"  scope="global"/>
+			<variableValue name="traname" required="true"/>
+			<variableValue name="reslib" required="true"  scope="global"/>
+			<instructions>Study this sample</instructions>
+			<weight>5</weight>
+			<skills>System Programmer</skills>
+			<autoEnable>false</autoEnable>
+			<template>
+				<inlineTemplate substitution="true">//SPOC      EXEC PGM=CSLUSPOC,
+//  PARM=('IMSPLEX=${instance-IMSPLEX},ROUTE=${instance-IMSID},WAIT=30,F=WRAP')
+//STEPLIB   DD DISP=SHR,DSN=$global-reslib
+//SYSPRINT  DD SYSOUT=*
+//SYSIN     DD *
+     /STA TRAN ${instance-traname}
+/*</inlineTemplate>
+				<submitAs>JCL</submitAs>
+				<saveAsDataset substitution="true">${instance-DFS_AUTH_LIB_HLQ}.JOBS(STATRAN)</saveAsDataset>
+			</template>
+		</step>-->
+
+		<step name="LoadInit_DB">
+			<title>Load and Initialize the IMS Database</title>
+			<description>Load and Initialize the IMS Database</description>
+			<instructions>
+				This step initialize the database created by the previous steps and that your applications will access.
+			</instructions>
+			<weight>10</weight>
+			<skills>Application Programmer</skills>
+			<autoEnable>true</autoEnable>
+			<template>
+				<inlineTemplate substitution="true">//*
+//*********************************************************************
+//*    D L I   B A T C H   I N I T I A L    L O A D                   *
+//*********************************************************************
+//*
+//UPDATE  EXEC PGM=DFSRRC00,REGION=4096K,
+//    PARM=(BMP,${instance-appname},${instance-DFS_PSBNAME},,,N00000,,,,,,,,${instance-DFS_IMS_SSID},,,,,,)
+//G.STEPLIB DD  DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL,DISP=SHR
+//         DD  DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL,
+//             DISP=SHR
+//         DD  DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.PGMLIB,DISP=SHR
+//G.PROCLIB DD  DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.PROCLIB,DISP=SHR
+//SYSPRINT DD  SYSOUT=*
+//PRINTDD  DD  SYSOUT=*
+//SYSIN    DD *
+S 2 2 2 2 2           1
+L  COMMENT: ADD DFSDDLT0 CONTROL STATEMENTS HERE TO LOAD DB
+//*
+//* END OF CLOUD BATCH DLI for DB INITIAL LOAD </inlineTemplate>
+				<submitAs>JCL</submitAs>
+				<maxLrecl>80</maxLrecl>
+				<saveAsDataset substitution="true">${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.JOBS(DBLOAD)</saveAsDataset>
+			</template>
+		</step>
+
+
+		<step name="DBRC_IC">
+			<title>DBRC Processing(DBRC IC)</title>
+			<description>Perform an Image Copy (IC) of the IMS Database </description>
+			<instructions>Perform an Image Copy (IC) of the IMS Database to deploy for recovery an tracking</instructions>
+			<weight>10</weight>
+			<skills>DB Admin</skills>
+			<autoEnable>true</autoEnable>
+			<template>
+				<inlineTemplate substitution="true">//CLOUDIC    EXEC PGM=DSPURX00,REGION=4096K
+//STEPLIB  DD  DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL,
+//             DISP=SHR
+//*        DD  DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL,DISP=SHR
+//*        DD  DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL,DISP=SHR
+//DFSRESLB DD  DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL,
+//             DISP=SHR
+//JCLPDS   DD  DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.PROCLIB,DISP=SHR
+//JCLOUT   DD  SYSOUT=(*,INTRDR)
+//SYSPRINT DD  SYSOUT=*
+//RECON1   DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.RECON1,DISP=SHR
+//RECON2   DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.RECON2,DISP=SHR
+//RECON3   DD DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.RECON3,DISP=SHR
+//IMS      DD  DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.DBDLIB,DISP=SHR
+//SYSIN    DD  *
+ GENJCL.IC DBD(${instance-DBname}) ONEJOB NOCIC LIST MEMBER(ICJCL)
+/*
+//*</inlineTemplate>
+				<submitAs maxRc="4">JCL</submitAs>
+				<maxLrecl>80</maxLrecl>
+				<saveAsDataset substitution="true">${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.JOBS(DBIC)</saveAsDataset>
+			</template>
+		</step>
+		
+	</step>  <!-- End of "Start_IMSResources" parent step -->
+
+
+
+	<step name="Query_DBDeployed">
+		<title>IMS Cloud Database deployed. Clean up installation files</title>
+		<description>This is the final step. IMS Cloud Database deployed.</description>
+		<prereqStep name="Start_IMSResources"/>
+		<instructions>This is the final step. IMS Cloud Database deployed.</instructions>
+		<weight>10</weight>
+		<skills>System Programmer</skills>
+		<autoEnable>true</autoEnable>
+		<template>
+			<inlineTemplate substitution="true">//*
+//SPOC      EXEC PGM=CSLUSPOC,
+//  PARM=('IMSPLEX=${instance-DFS_IMSPlex},ROUTE=${instance-DFS_IMS_SSID},WAIT=30,F=WRAP')
+//STEPLIB   DD DISP=SHR,DSN=${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.SDFSRESL
+//SYSPRINT  DD SYSOUT=*
+//SYSIN     DD *
+   UPDATE DB NAME(${instance-DBname}) START(ACCESS) OPTION(OPEN)
+   QRY DB  NAME(${instance-DBname}) SHOW(ALL)
+/*</inlineTemplate>
+			<submitAs>JCL</submitAs>
+			<maxLrecl>80</maxLrecl>
+			<saveAsDataset substitution="true">${instance-DFS_AUTH_LIB_HLQ}.${instance-DFS_AUTH_LIB_HLQ2}.${instance-DFS_AUTH_USER_HLQ3}.JOBS(OPNDB)</saveAsDataset>
+		</template>
+	</step>
+
+</workflow>

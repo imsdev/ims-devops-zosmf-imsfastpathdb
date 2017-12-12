@@ -1,0 +1,878 @@
+<!-- IMS DB Provisioning Variables -->
+
+<!-- ************************************************************** -->
+<!-- ************************************************************** -->
+<!-- Define variables to used by the IMS DB Provisioning Workflow** -->
+<!-- ************************************************************** -->
+<!-- ************************************************************** -->
+
+
+<!-- ************************************************************************************************************************* -->
+<!-- *******************************    IMS Identity Related Variables Declaration    **************************************** -->
+<!-- ************************************************************************************************************************* -->
+
+
+
+
+<!-- ************************************************************************************************************************* -->
+<!-- *******************************    IMS Dataset Variables Declaration    ************************************************* -->
+<!-- ************************************************************************************************************************* -->
+<variable name="DFS_AUTH_LIB_HLQ" visibility="public">
+	<label>IMS Instance HLQ for System Datasets</label>
+	<abstract>High-level qualifier</abstract>
+	<description>The data set high-level qualifier used by the IMS</description>
+	<category>IMS DataSet</category>
+	<string>
+		<validationType>DSNAME</validationType>
+		<default>ZCLOUD</default>
+	</string>
+</variable>
+
+
+<variable name="DFS_AUTH_LIB_HLQ2" visibility="public">      					<!--  Second level DSNAME qualifier for IMS System data sets -->
+<label>Second Level Qualifier for IMS Instance Datasets</label>
+	<abstract>Second high level qualifier for IMS System (SYS) data sets</abstract>
+	<description>This variable specifies the second high level DSNAME qualifier (HLQ) used by the IMS Dataset installation
+This grouping of data sets includes both SMP/E controlled data sets:
+o   SDFSRESL, SDFSMAC, MODBLKS, SDFSCLST, SDFSTLIB, ...
+and non-SMP/E controlled data sets:
+o   OPTIONS, OBJDSET, PROCLIB, MATRIX,
+
+Data sets associated with this HLQ variable belong to the "SYS" group.  If
+this variable is changed, then the HLQ variables for ALL data sets belonging
+to this group will be changed accordingly.
+	</description>
+	<category>IMS DataSet</category>
+	<string>
+		<validationType>DSNAME</validationType>
+		<default>IMS</default>
+	</string>
+</variable>
+
+
+<!-- ************************************************************************************************************************* -->
+<!-- *******************************    IMS Work Dataset Variables Declaration    ******************************************** -->
+<!-- ************************************************************************************************************************* -->
+<variable name="DFS_AUTH_USER_HLQ3" visibility="public">
+	<label>Work dataset third-level qualifier.</label>
+	<abstract>Third level qualifier for users work datasets</abstract>
+	<description>The data set third-level qualifier you wish to use as work data set for this workflow.
+The third-level qualifier will appended to the first and second level qualifiers used for IMS System datasets.</description>
+	<category>Work DataSets</category>
+	<string>
+		<validationType>DSNAME</validationType>
+		<default>USER01</default>
+	</string>
+</variable>
+
+
+
+
+<!-- ************************************************************************************************************************* -->
+<!-- *******************************    IMS Subsystem Variables Declaration    *********************************************** -->
+<!-- ************************************************************************************************************************* -->
+<variable name="DFS_IMSPlex" scope="instance" visibility="public"> 	<!-- The IMS PLEX name  -->
+	<label>IMS Plex Name</label>
+	<abstract>IMSPLEX name for this zCloud IMS </abstract>
+	<description>
+		IMSPLEX name for this zCloud IMS
+	</description>
+	<category>IMS Subsystem</category>
+	<string>
+        <regularExpression>[A-Z0-9]{3,8}</regularExpression>
+		<choice>PLEX1</choice>
+		<default>PLEX1</default>
+	</string>
+</variable>
+
+
+<variable name="DFS_IMS_SSID" visibility="public"> <!-- Subsystem name for IMS or IMSID -->
+	<label>IMS Subsystem name</label>
+	<abstract>Subsystem name for the zCloud IMS</abstract>
+	<description>
+		Subsystem name for the zCloud IMS
+	</description>
+	<category>IMS Subsystem</category>
+	<string>
+        <regularExpression>[A-Z0-9]{1,8}</regularExpression>
+		<choice>IMS1</choice>
+		<choice>IMS2</choice>
+		<default>IMS1</default>
+	</string>
+</variable>
+
+
+
+
+
+
+
+<!-- ************************************************************************************************************************* -->
+<!-- *******************************    z/OS Environment    ****************************************************************** -->
+<!-- ************************************************************************************************************************* -->
+<variable name="zCloud_IMSDEV" scope="instance"> 		<!-- Device type for miscellaneous IMS data sets (UNIT) SYSALLDA -->
+	<label>Device Type #1</label>
+	<abstract>Device type for miscellaneous IMS data sets</abstract>
+	<description>
+		A validation type of VOLSER allows for 1-8 alphanumeric characters (upper case letters only).
+	</description>
+	<category>z/OS Environment - IMS</category>
+	<string>
+        <regularExpression>[A-Z0-9]{1,8}</regularExpression>
+		<choice>SYSALLDA</choice>
+        <choice>SYSDA</choice>
+		<default>SYSALLDA</default>
+	</string>
+</variable>
+
+
+
+
+
+
+<!-- ************************************************************************************************************************* -->
+<!-- *******************************    z/OS Environment - IMS    ************************************************************ -->
+<!-- ************************************************************************************************************************* -->
+<variable name="zCloud_IMSDEV2" scope="instance"> 	<!-- Device type for miscellaneous IMS data sets (UNIT): 3390 -->
+	<label>Device Type #2</label>
+	<abstract>Device type for miscellaneous IMS data sets</abstract>
+	<description>
+		A validation type of VOLSER allows for 1-8 alphanumeric characters (upper case letters only).
+	</description>
+	<category>z/OS Environment - IMS</category>
+	<string>
+        <regularExpression>[A-Z0-9]{1,8}</regularExpression>
+		<choice>3380</choice>
+        <choice>3390</choice>
+		<default>3390</default>
+	</string>
+</variable>
+
+
+<variable name="DFS_DS_VOLUME1" scope="instance"> 		<!-- DASD Volume serial for IMS data sets -->
+	<label>Volume #1</label>
+	<abstract>DASD Volume serial</abstract>
+	<description>
+		A validation type of VOLSER allows for 1-6 alphanumeric (upper case letters only)characters.
+	</description>
+	<category>z/OS Environment - IMS</category>
+	<string>
+		<validationType>VOLSER</validationType>
+		<choice>W68001</choice>
+		<choice>W68002</choice>
+		<default>W68001</default>
+	</string>
+</variable>
+
+
+
+
+
+
+<!-- ************************************************************************************************************************* -->
+<!-- *******************************    z/OS System    *********************************************************************** -->
+<!-- ************************************************************************************************************************* -->
+<variable name="zCloud_MACLIB" scope="instance">  <!-- z/OS Macro Library **same as IXUSMACL **-->
+	<label>z/OS Macros library</label>
+	<abstract>z/OS Macros library DSN</abstract>
+	<description>
+				Provide a valid data set name of the library containing z/OS macros.
+				<br> </br>
+				A validation type of DSNAME allows a maximum of 44 alphanumeric (upper case letters only) characters,
+				including the national characters, as well as "-". However, the name must start with a letter or national.
+				The name consists of 1-8 character qualifiers separated by a period.
+	</description>
+	<category>z/OS System</category>
+	<string>
+		<validationType>DSNAME</validationType>
+		<choice>SYS1.AMACLIB</choice>
+		<default>SYS1.MACLIB</default>
+	</string>
+</variable>
+
+
+
+
+
+
+
+
+<!-- ************************************************************************************************************************* -->
+<!-- *******************************    IMS Database Variables Declaration    ************************************************ -->
+<!-- ************************************************************************************************************************* -->
+<variable name="DBname" visibility="public">
+	<label>DataBase name</label>
+	<abstract>Specify the IMS DataBase name you want to use</abstract>
+	<description>Specify the IMS Data Base name to use 	
+	</description>	
+	<category>IMS DataBase</category>
+	<string>		
+		<regularExpression>[A-Z0-9]{1,8}</regularExpression>
+		<default>C1PAYROL</default>
+	</string>
+</variable>
+
+<variable name="AREAname" visibility="public">
+	<label>DB Area name</label>
+	<abstract>Define an Area name for this Data Base</abstract>
+	<description>
+		Specify the name of the Area used with this DataBase
+	</description>
+	<category>IMS DataBase</category>
+	<string>
+		<regularExpression>[A-Z0-9]{1,8}</regularExpression>	
+		<default>C1PAY</default>
+	</string>
+</variable>
+
+<variable name="AREAsize">
+	<label>Area Size</label>
+	<abstract>Specify an area size</abstract>
+	<description>
+		Specify an Area Size. Area Size may be 512 bytes, 1 KB, 2 KB, 4 KB, and 8 KB and multiples of 4 KB up to 28 
+	</description>
+	<category>IMS DataBase</category>
+	<string multiLine="false">
+		<regularExpression>[0-9]{3,6}</regularExpression>	
+		<choice>512</choice>
+		<choice>1024</choice>
+		<choice>2048</choice>
+		<choice>4096</choice>
+		<choice>8192</choice>
+		<choice>12288</choice>
+		<choice>16384</choice>
+		<default>4096</default>
+	</string>	
+</variable>
+
+
+<variable name="AREArootNum2">
+	<label>Root area space</label>
+	<abstract>Total space allocated to the root addressable part of the area and to the area independent overflow</abstract>
+	<description>
+		Specifies the total space allocated to the root addressable part of the area and to the area reserved for 
+		independent overflow. It is expressed in UOWs. The rest of the VSAM data set is reserved for sequential 
+		dependent data. The value must be greater than 2 and less than 32767; it cannot be larger than the amount 
+		of space actually in the VSAM data set.
+	</description>
+	<category>IMS DataBase</category>
+	<integer>
+		<minValue>3</minValue>
+		<maxValue>32767</maxValue>
+		<default>21</default>		
+	</integer>	
+</variable>
+
+
+<variable name="AREArootOverflow2">
+	<label>Area overflow space</label>
+	<abstract>Space reserved for independent overflow in terms of UOWs</abstract>
+	<description>
+		Specifies the space reserved for independent overflow in terms of UOWs. It must be at least one and must be less 
+		than the value specified for number2. Although independent overflow does not contain UOWs, the UOW size is used 
+		as the unit for space allocation.
+	</description>
+	<category>IMS DataBase</category>
+	<integer>
+		<minValue>1</minValue>
+		<maxValue>32767</maxValue>
+		<default>2</default>		
+	</integer>	
+</variable>
+
+
+<variable name="AREAuowNumber1">
+	<label>UOW Control Intervals</label>
+	<abstract>Number of control intervals in a unit of work</abstract>
+	<description>
+		Specifies the number of control intervals in a unit of work (UOW). Its value must be from 2 to 32767.
+	</description>
+	<category>IMS DataBase</category>
+	<integer>
+		<minValue>2</minValue>
+		<maxValue>32767</maxValue>
+		<default>180</default>		
+	</integer>	
+</variable>
+
+
+<variable name="AREAuowOverflow1">
+	<label>UOW Control Intervals Overflow</label>
+	<abstract>Number of control intervals in overflow section of a UOW</abstract>
+	<description>
+		Specifies the number of control intervals in the overflow section of a UOW. Overflow1 can be any value greater 
+		than or equal to one but at least one less than the specified value for UOW control intervals..
+	</description>
+	<category>IMS DataBase</category>
+	<integer>
+		<minValue>2</minValue>
+		<maxValue>32766</maxValue>
+		<default>36</default>		
+	</integer>	
+</variable>
+
+
+
+<variable name="VERSION">
+	<label>IMS DB Version Description</label>
+	<abstract>IMS DB Version Description </abstract>
+	<description>
+		Use this field to specify the IMS Databse version. Any alphanumerical string from 1 to 255 bytes.
+	</description>
+	<category>IMS DataBase</category>
+	<string multiLine="false">
+		<regularExpression>[a-zA-Z0-9 .,!?']{1,255}</regularExpression>	
+		<default>VERSION1</default>	
+	</string>
+</variable>
+
+
+
+
+<!-- ************************************************************************************************************************* -->
+<!-- *******************************    DB Segments Variables Declaration    ************************************************* -->
+<!-- ************************************************************************************************************************* -->
+
+
+
+
+
+<!-- ************************************************************************************************************************* -->
+<!-- *******************************    DB Segment 1 Variables Declaration    ************************************************ -->
+<!-- ************************************************************************************************************************* -->
+<variable name="Segm1Name">
+	<label>Segment 1 Name</label>
+	<abstract>Define IMS Payroll Data Base Segment1 name</abstract>
+	<description>
+		Specify the name of the first segment in the Database to deploy
+	</description>
+	<category>DB Segment 1</category>
+	<string>
+		<regularExpression>[a-zA-Z0-9]{1,8}</regularExpression>	
+		<default>EMPLOYEE</default>	
+	</string>
+</variable>
+
+
+<variable name="Segm1MaxLength">
+	<label>Segment 1 max length</label>
+	<abstract>Define IMS Database Segment1 maximum length</abstract>
+	<description>
+		Specify the maximum length of the first segment in the Database to deploy. 
+	</description>
+	<category>DB Segment 1</category>
+	<integer>
+		<minValue>4</minValue>
+		<maxValue>32760</maxValue>
+		<default>3976</default>		
+	</integer>	
+</variable>
+
+
+<variable name="Segm1MinLength">
+	<label>Segment 1 minimum length</label>
+	<abstract>Define IMS Database Segment1 minimum length</abstract>
+	<description>
+		Specify the minimum length of the first segment in the Database to deploy. 
+	</description>
+	<category>DB Segment 1</category>
+	<integer>
+		<minValue>4</minValue>
+		<maxValue>32760</maxValue>
+		<default>18</default>		
+	</integer>	
+</variable>
+
+
+<variable name="Segm1Type">
+	<label>Segment 1 type</label>
+	<abstract>Define IMS Data Base Segment1 type</abstract>
+	<description>
+		Specify the type of segment in the Database to deploy. 
+	</description>
+	<category>DB Segment 1</category>
+	<string>
+		<regularExpression>[A-Z]{5,8}</regularExpression>		
+		<choice>CHILD</choice>
+		<choice>PARENT</choice>
+		<default>PARENT</default>			
+	</string>
+</variable>
+
+
+<variable name="Field1Name1">
+	<label>Segment 1 Field 1 name</label>
+	<abstract>Define the field 1 name, belonging to the Segment1</abstract>
+	<description>
+		Specify the name of the field for the first segment in the Database to deploy. Default is EMPLNO.
+	</description>
+	<category>DB Segment 1</category>
+	<string>
+		<regularExpression>[a-zA-Z0-9]{1,8}</regularExpression>
+		<default>EMPLNO</default>		
+	</string>
+</variable>
+
+
+<variable name="Field1Start1">
+	<label>Field 1 starting position</label>
+	<abstract>Define Field 1 starting position belonging to segment1)</abstract>
+	<description>
+		Specify the Field 1 starting position (under segment 1) or accept default
+	</description>
+	<category>DB Segment 1</category>
+	<integer>
+		<minValue>1</minValue>
+		<maxValue>999</maxValue>
+		<default>3</default>	
+	</integer>	
+</variable>
+
+
+<variable name="Field1Length1">
+	<label>Field 1 length segment1</label>
+	<abstract>Define IMS Data Base Field 1 length</abstract>
+	<description>
+		Specify the length of the field 1 (belonging to segment1)
+	</description>
+	<category>DB Segment 1</category>
+	<integer>
+		<minValue>1</minValue>
+		<maxValue>999</maxValue> 
+		<default>4</default>
+	</integer>	
+</variable>
+
+
+<variable name="Field2Name1">
+	<label>Segment 1 Field 2 name</label>
+	<abstract>Define the field 2 name, belonging to the Segment1</abstract>
+	<description>
+		Specify the name of the second field for the first segment in the Database to deploy
+	</description>
+	<category>DB Segment 1</category>
+	<string>
+		<regularExpression>[A-Z0-9]{1,8}</regularExpression>
+		<default>EMPLNAME</default>		
+	</string>
+</variable>
+
+
+<variable name="Field2Start1">
+	<label>Field 2 starting position</label>
+	<abstract>Define Field 2 starting position belonging to segment1</abstract>
+	<description>
+		Specify the Field 2 starting position (consider field 1 length, under segment 1) or accept the default. 
+	</description>
+	<category>DB Segment 1</category>
+	<integer>
+		<minValue>1</minValue>
+		<maxValue>255</maxValue>
+		<default>7</default>	
+	</integer>	
+</variable>
+
+
+<variable name="Field2Length1">
+	<label>Field 2 length</label>
+	<abstract>Define IMS Data Base Field 2 length</abstract>
+	<description>
+		Specify the length of the field 2 (belonging to segment1)
+	</description>
+	<category>DB Segment 1</category>
+	<integer>
+		<minValue>1</minValue>
+		<maxValue>999</maxValue> 
+		<default>30</default>
+	</integer>	
+</variable>
+
+
+
+
+<!-- ************************************************************************************************************************* -->
+<!-- *******************************    DB Segment 2 Variables Declaration    ************************************************ -->
+<!-- ************************************************************************************************************************* -->
+<variable name="Segm2Name">
+	<label>Segment 2 Name</label>
+	<abstract>Define IMS Payroll Data Base Segment2 name</abstract>
+	<description>
+		Specify the name of the second segment in the Database to deploy
+	</description>
+	<category>DB Segment 2</category>
+	<string>
+		<regularExpression>[a-zA-Z0-9]{1,8}</regularExpression>	
+		<default>SALARY</default>	
+	</string>
+</variable>
+
+
+<variable name="Segm2Length">
+	<label>Segment 2 length</label>
+	<abstract>Define IMS Data Base Segment2 length</abstract>
+	<description>
+		Specify the length of the second segment in the Database to deploy. 
+	</description>
+	<category>DB Segment 2</category>
+	<integer>
+		<minValue>1</minValue>
+		<maxValue>999</maxValue>
+		<default>300</default>			
+	</integer>	
+</variable>
+
+
+<variable name="Segm2Type">
+	<label>Segment 2 type</label>
+	<abstract>Define IMS Data Base Segment2 type</abstract>
+	<description>
+		Specify the type of segment in the Database to deploy. 
+	</description>
+	<category>DB Segment 2</category>
+	<string>
+		<regularExpression>[A-Z]{5,8}</regularExpression>		
+		<choice>CHILD</choice>
+		<choice>PARENT</choice>
+		<default>PARENT</default>		
+	</string>
+</variable>
+
+
+<variable name="Field1Name2">
+	<label>Segment 2 Field 1 name</label>
+	<abstract>Define the field 1 name, belonging to the Segment2</abstract>
+	<description>
+		Specify the name of the field for the second segment in the Database to deploy. Default is SALRYSEQ.
+	</description>
+	<category>DB Segment 2</category>
+	<string>
+		<regularExpression>[a-zA-Z0-9]{1,8}</regularExpression>	
+		<default>SALRYSEQ</default>		
+	</string>
+</variable>
+
+
+<variable name="Field1Start2">
+	<label>Field 1 starting position </label>
+	<abstract>Define Field 1 starting position (belonging to segment2)</abstract>
+	<description>
+		Specify the Field 1 starting position (under segment 2) or accept default
+	</description>
+	<category>DB Segment 2</category>
+	<integer>
+		<minValue>1</minValue>
+		<maxValue>999</maxValue>
+		<default>1</default>	
+	</integer>	
+</variable>
+
+
+<variable name="Field1Length2">
+	<label>Field 1 length segment2</label>
+	<abstract>Define IMS Data Base Field 1 length</abstract>
+	<description>
+		Specify the length of the field 1 (belonging to segment2)
+	</description>
+	<category>DB Segment 2</category>
+	<integer>
+		<minValue>1</minValue>
+		<maxValue>999</maxValue> 
+		<default>6</default>
+	</integer>	
+</variable>
+
+
+<variable name="Field2Name2">
+	<label>Segment 2 Field 2 name</label>
+	<abstract>Define the field 2 name, belonging to the Segment2</abstract>
+	<description>
+		Specify the name field for the second segment in the Database to deploy
+	</description>
+	<category>DB Segment 2</category>
+	<string>
+		<regularExpression>[A-Z0-9]{1,8}</regularExpression>	
+		<default>FLD2NM2</default>		
+	</string>
+</variable>
+
+
+<variable name="Field2Start2">
+	<label>Field 1 starting position </label>
+	<abstract>Define Field 1 starting position (belonging to segment2)</abstract>
+	<description>
+		Specify the Field 1 starting position (consider field 1 length, under segment 2) or accept the default.
+	</description>
+	<category>DB Segment 2</category>
+	<integer>
+		<minValue>1</minValue>
+		<maxValue>255</maxValue>
+		<default>7</default>	
+	</integer>	
+</variable>
+
+
+<variable name="Field2Length2">
+	<label>Field 2 length</label>
+	<abstract>Define IMS Data Base Field 2 length</abstract>
+	<description>
+		Specify the length of the field 2 (belonging to segment2)
+	</description>
+	<category>DB Segment 2</category>
+	<integer>
+		<minValue>1</minValue>
+		<maxValue>999</maxValue> 
+		<default>30</default>
+	</integer>	
+</variable>
+
+
+
+
+<!-- ************************************************************************************************************************* -->
+<!-- *******************************    DB Segment 3 Variables Declaration    ************************************************ -->
+<!-- ************************************************************************************************************************* -->
+<variable name="Segm3Name">
+	<label>Segment 3 Name</label>
+	<abstract>Define IMS Payroll Data Base Segment3 name</abstract>
+	<description>
+		Specify the name of the third segment in the Database to deploy. To crate more segments rerun this step and 
+use different names.
+	</description>
+	<category>DB Segment 3</category>
+	<string>
+		<regularExpression>[a-zA-Z0-9]{1,7}</regularExpression>	
+		<default>JOB</default>		
+	</string>
+</variable>
+
+
+<variable name="Segm3Length">
+	<label>Segment 3 length</label>
+	<abstract>Define IMS Data Base Segment3 length</abstract>
+	<description>
+		Specify the length of the third segment in the Database to deploy. 
+	</description>
+	<category>DB Segment 3</category>
+	<integer>
+		<minValue>1</minValue>
+		<maxValue>999</maxValue> 
+		<default>50</default>		
+	</integer>	
+</variable>
+
+
+<variable name="Segm3Type">
+	<label>Segment 3 type</label>
+	<abstract>Define IMS Data Base Segment3 type</abstract>
+	<description>
+		Specify the type of segment in the Database to deploy. 
+	</description>
+	<category>DB Segment 3</category>
+	<string>
+		<regularExpression>[A-Z]{5,8}</regularExpression>		
+		<choice>CHILD</choice>
+		<choice>PARENT</choice>
+		<default>PARENT</default>		
+	</string>
+</variable>
+
+
+<variable name="Field1Name3">
+	<label>Segment 3 Field 1 name</label>
+	<abstract>Define the field 1 name, belonging to the Segment3</abstract>
+	<description>
+		Specify the name of the field for the third segment in the Database to deploy
+	</description>
+	<category>DB Segment 3</category>
+	<string>
+		<regularExpression>[a-zA-Z0-9]{1,8}</regularExpression>	
+		<default>JOBSEQ</default>		
+	</string>
+</variable>
+
+
+<variable name="Field1Start3">
+	<label>Field 1 starting position </label>
+	<abstract>Define Field 1 starting position (belonging to segment3)</abstract>
+	<description>
+		Specify the Field 1 starting position (under segment 3) or accept default
+	</description>
+	<category>DB Segment 3</category>
+	<integer>
+		<minValue>1</minValue>
+		<maxValue>999</maxValue>
+		<default>1</default>	
+	</integer>	
+</variable>
+
+
+<variable name="Field1Length3">
+	<label>Field 1 length segment3</label>
+	<abstract>Define IMS Data Base Field 1 length</abstract>
+	<description>
+		Specify the length of the field 1 (belonging to segment3)
+	</description>
+	<category>DB Segment 3</category>
+	<integer>
+		<minValue>1</minValue>
+		<maxValue>255</maxValue> 
+		<default>6</default>
+	</integer>	
+</variable>
+
+
+<variable name="Field2Name3">
+	<label>Segment 3 Field 2 name</label>
+	<abstract>Define the field 2 name, belonging to the Segment3</abstract>
+	<description>
+		Specify the name field for the second segment in the Database to deploy
+	</description>
+	<category>DB Segment 3</category>
+	<string>
+		<regularExpression>[A-Z0-9]{1,8}</regularExpression>	
+		<default>JOBNAME</default>		
+	</string>
+</variable>
+
+
+<variable name="Field2Start3">
+	<label>Field 1 starting position </label>
+	<abstract>Define Field 1 starting position (belonging to segment3)</abstract>
+	<description>
+		Specify the Field 1 starting position (consider field 1 length, under segment 3) or accept the default.
+	</description>
+	<category>DB Segment 3</category>
+	<integer>
+		<minValue>1</minValue>
+		<maxValue>255</maxValue>
+		<default>7</default>	
+	</integer>	
+</variable>
+
+
+<variable name="Field2Length3">
+	<label>Field 2 length</label>
+	<abstract>Define IMS Data Base Field 2 length</abstract>
+	<description>
+		Specify the length of the field 2 (belonging to segment3)
+	</description>
+	<category>DB Segment 3</category>
+	<integer>
+		<minValue>1</minValue>
+		<maxValue>999</maxValue> 
+		<default>30</default>
+	</integer>	
+</variable>
+
+
+
+
+
+
+<!-- ************************************************************************************************************************* -->
+<!-- *******************************    IMS Application Variables Declaration    *********************************************** -->
+<!-- ************************************************************************************************************************* -->
+
+
+<variable name="application">
+	<label>Application source</label>
+	<abstract>application program source </abstract>
+	<description>
+		Use this field to paste the application program source code you wish to use and deploy.
+	</description>
+	<category>IMS Application</category>
+	<string multiLine="true">
+		<regularExpression>[0-9a-zA-Z .,!?']{1,9000}</regularExpression>
+	</string>
+</variable>
+
+<variable name="traname">
+	<label>IMS Transaction name</label>
+	<abstract>IMS transaction (TRAN) name</abstract>
+	<description>IMS transaction (TRAN) name</description>
+	<category>IMS Resource</category>
+	<string>
+		<regularExpression>[A-Z0-9]{3,8}</regularExpression>		
+		<choice>TRANCLD2</choice>
+		<choice>TRANCLD3</choice>
+		<choice>TRANCLD4</choice>
+		<default>TRANCLD1</default>
+	</string>
+</variable>
+
+<variable name="appname">
+	<label>Application name</label>
+	<abstract>Application name</abstract>
+	<description>Choose the application name to be use for the next steps of this process.
+	<br></br>
+	If you chose the default name <b>CLDAPP1</b> it is reccomended that you will use the PSB <b>CLDPSB1</b> and the DBD <b>CLDDBD1</b>.	
+	</description>
+	<category>IMS Application</category>
+	<string>
+		<regularExpression>[A-Z0-9]{3,8}</regularExpression>		
+		<choice>CLDAPP1</choice>
+		<choice>CLDAPP2</choice>
+		<choice>CLDAPP3</choice>
+		<default>DFSDDLT0</default>        <!-- Generic app supplied with IMS -->
+	</string>
+</variable>
+
+
+<!-- ************************************************************************************************************************* -->
+<!-- *******************************    IMS Database  Variables Declaration    *********************************************** -->
+<!-- ************************************************************************************************************************* -->
+
+<variable name="DFS_PSBNAME">
+	<label>IMS PSB name</label>
+	<abstract>IMS PSB name</abstract>
+	<description>The IMS Program Specification Block (PSB)
+	<br></br>
+	Please be aware that each one of these default PSBs are associated to the default DBD's provided by the IMS Cloud Application Package.
+	If you chose a PSB name not listed here, the steps of this process will assume that all the associated resources are available in designated work libraries.
+		<ul>
+		<li><b>C1LPAYA </b>  Used to access the basic form of a payroll database. Organization: HDAM </li>
+		<li><b>C2LPAYA </b>  Used to access the more sophisticated form of a payroll database. Organization: HDAM </li>		
+		<li><b>C1LPAYA </b>  Used to access the basic form of a payroll database  </li>
+		</ul>
+	</description>
+	<category>IMS</category>
+	<string>		
+		<regularExpression>[A-Z0-9]{1,8}</regularExpression>
+		<choice>C1LPAYA</choice>
+		<choice>C2LPAYA</choice>
+		<default>C1LPAYA</default>
+	</string>
+</variable>
+
+<variable name="DFS_PCBNAME">
+	<label>IMS PCB name</label>
+	<abstract>IMS PCB name</abstract>
+	<description>The name of the IMS Program Control Block (PCB)
+	<br></br>
+	Please be aware that each one of these default PSBs are associated to the default DBD's provided by the IMS Cloud Application Package.
+	If you chose a PSB name not listed here, the steps of this porcess will assume that all the associated resources are available in designated work libraries.
+		<ul>
+		<li><b>CLDPCB1 </b>  It is reccomended that you chose a DB with an organization: HDAM,OSAM </li>
+		<li><b>CLDPCB2 </b>  It is reccomended that you chose a DB with an organization: HIDAM  </li>
+		<li><b>CLDPCB3 </b>  It is reccomended that you chose a DB with an organization: HSAM  </li>
+		<li><b>CLDPCB4 </b>  It is reccomended that you chose a DB with an organization: GSAM  </li>
+		</ul>
+	</description>
+	<category>IMS</category>
+	<string>		
+		<regularExpression>[A-Z0-9]{3,8}</regularExpression>
+		<choice>C1PAY</choice>
+		<choice>C2PAY</choice>
+		<choice>C3PAY</choice>
+		<default>XXPAY</default>
+	</string>
+</variable>
+
+
+
+
+
+
+<!-- ************************************************************************************************************************* -->
+<!-- **************************************** E  N  D  of  IMS Database  Variables Declaration **************************************** -->
+<!-- ************************************************************************************************************************* -->
