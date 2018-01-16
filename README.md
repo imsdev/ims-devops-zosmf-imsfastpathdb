@@ -2,11 +2,11 @@
 
 ## Overview
 
-With the IMS Fast Path DEDB database workflows you can rapidly provision or deprovision a DEDB database in an existing IMS system by using the IBM® z/OS® Management Facility
+With the IMS™ Fast Path DEDB database workflows you can rapidly provision or deprovision a DEDB database in an existing IMS system by using the IBM® z/OS® Management Facility
 (z/OSMF).
 
 #### Provision workflow
-The provision workflow will provision a Fast Path DEDB database in an existing IMS with these steps:
+The provision workflow will provision a Fast Path DEDB database in an existing IMS™ with these steps:
 
 | Step          | Description   |
 | :------------:|:------------- |
@@ -56,7 +56,6 @@ following table.
 The properties file contains default values for some of these variables, but you will need to customize
 others.
 
-
 | Property      | Remarks       |
 | :-------------|:------------- |
 | DFS_PSBNAME | DB PSB name|
@@ -97,8 +96,6 @@ others.
 | DFS_FSTYPE | File System for Unix Files|
 | DFS_IMS_SECURITY | True/False to use SMS managed DASD for IMS libraries|
 
-
-
 ## Pre-requisites
 * An existing IMS system.
 * Identify the z/OS and IMS system parameters.
@@ -112,19 +109,21 @@ To run the workflow, you need the following authority:
 
 ## Package structure 
 The repository includes the following files:
-* provision_IMS_DEDB.xml
+* Provision_IMS_DEDB.xml
   * This file provisions an IMS Fast Path DEDB database. Do not modify the workflow XML.
-* deprovision_IMS_DEDB.xml
+* Deprovision_IMS_DEDB.xml
   * This file de-provisions an IMS Fast Path DEDB database. Do not modify the workflow XML.
+* IMS_DEDB_Variables.xml
+  * This file defines the variables that are referenced by the steps in the workflow.
 * IMS_DEDB_Input_Variables.properties
   * This properties file contains values from the variables referenced in the provision_IMS_DEDB.xml and deprovision_IMS_DEDB.xml workflows. Edit the each properties file to specify the system specific information for the variables in the file.
 
 ## Installation 
-* FTP the provision_IMS_DEDB.xml, deprovision_IMS_DEDB.xml, and the workflow_variables.properties files to USS on the z/OS host in binary mode.
+* FTP the Provision_IMS_DEDB.xml, Deprovision_IMS_DEDB.xml, and the IMS_DEDB_Input_Variables.properties files to USS on the z/OS host in binary mode.
 * The files need to be made visible to the z/OSMF application.  Do this by changing the access permissions of the files using the chmod command.
 * Example chmod commands:
 ```Java
-chmod 755 setUpCatalogManagedACB.xml
+chmod 755 Provision_IMS_DEDB.xml
 ```
 * Or if the file is in a folder with the name of workflows:
 ```Java 
