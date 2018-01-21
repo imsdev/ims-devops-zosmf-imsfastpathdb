@@ -148,7 +148,7 @@ For more information about running a workflow see [Creating a workflow](https://
 ## Troubleshooting
 * IZUWF0105E   Workflow property file file-name is either not found or cannot be accessed
   * Typically, this error occurs when the file does not exist at the given path. If the file does exist, access permission to the file must be set by using the chmod command.
-* If there is no **Workflows** menu option in the z/OSMF web interface, configure the IZUPRMxx member in the SYS.PARMLIB to specify the WORKLOAD_MGMT in the PLUGINS statement. For more information see [creating a IZUPRMxx](https://www.ibm.com/support/knowledgecenter/en/SSLTBW_2.2.0/com.ibm.zos.v2r2.izua300/izuconfig_IZUPRMxx.htm) in the IBM Knowledge Center.
+* If there is no **Workflows** menu option in the z/OSMF web interface, configure the IZUPRMxx member in SYS.PARMLIB to specify the WORKLOAD_MGMT in the PLUGINS statement. For more information see [creating a IZUPRMxx](https://www.ibm.com/support/knowledgecenter/en/SSLTBW_2.2.0/com.ibm.zos.v2r2.izua300/izuconfig_IZUPRMxx.htm) in the IBM Knowledge Center.
   * Example: 
   
         PLUGINS(INCIDENT_LOG  
