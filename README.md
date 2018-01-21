@@ -115,7 +115,7 @@ The repository includes the following files:
 * IMS_DEDB_Variables.xml
   * This file defines the variables that are referenced by the steps in the workflow.
 * IMS_DEDB_Input_Variables.properties
-  * This properties file contains values for the variables referenced in the provision_IMS_DEDB.xml and deprovision_IMS_DEDB.xml workflows. Edit the IMS_DEDB_Input_Variables.properties file to specify the system specific information for the variables in the file.
+  * This properties file contains values for the variables referenced in the provision_IMS_DEDB.xml and deprovision_IMS_DEDB.xml workflows. Edit the IMS_DEDB_Input_Variables.properties file to specify your system specific information for the variables in the file.
 
 ## Installation 
 * Use FTP to transfer the Provision_IMS_DEDB.xml, Deprovision_IMS_DEDB.xml, and the IMS_DEDB_Input_Variables.properties files to USS on the z/OS host in binary mode.
