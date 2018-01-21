@@ -2,7 +2,7 @@
 
 ## Overview
 
-You can rapidly provision or deprovision a DEDB database in an existing IMS system by using the IBM® z/OS® Management Facility (z/OSMF) with these z/OSMF workflow samples.
+You can rapidly provision or deprovision a DEDB database in an existing IMS™ system by using the IBM® z/OS® Management Facility (z/OSMF) with these z/OSMF workflow samples.
 
 #### Provision workflow
 The provision workflow will provision a Fast Path DEDB database in an existing IMS™ with these steps:
